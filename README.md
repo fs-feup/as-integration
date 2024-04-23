@@ -1,3 +1,9 @@
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=fs-feup_as-integration&metric=bugs)](https://sonarcloud.io/summary/new_code?id=fs-feup_as-integration)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=fs-feup_as-integration&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=fs-feup_as-integration)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=fs-feup_as-integration&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=fs-feup_as-integration)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=fs-feup_as-integration&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=fs-feup_as-integration)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=fs-feup_as-integration&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=fs-feup_as-integration)
+
 # As Integration Repository
 
 This repository holds the packages responsible for the interface between the AS Main pipeline and the vehicle, such as:
