@@ -87,14 +87,14 @@
  * yaw rate
  * acceleration in y
  */
-#define IMU_YAW_RATE_ACC_Y_ID 0x174
+#define IMU_YAW_RATE_ACC_Y_ID 0x175 // For some reason different from datasheet
 
 /*
  * ID used from the IMU for:
  * roll rate
  * acceleration in x
  */
-#define IMU_ROLL_RATE_ACC_X_ID 0x178
+#define IMU_ROLL_RATE_ACC_X_ID 0x179 // For some reason different from datasheet
 
 /*
  * ID used from the IMU for:
@@ -143,7 +143,7 @@ class RosCan : public rclcpp::Node {
   // rclcpp::Subscription<std_msgs::msg::String::SharedPtr> busStatus;
   rclcpp::Subscription<fs_msgs::msg::ControlCommand>::SharedPtr controlListener;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr emergencyListener;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr missionFinishedListener;
+  rclcpp::Subscription<fs_msgs::msg::FinishedSignal>::SharedPtr missionFinishedListener;
   rclcpp::TimerBase::SharedPtr timer;
   rclcpp::TimerBase::SharedPtr timerAliveMsg;
 

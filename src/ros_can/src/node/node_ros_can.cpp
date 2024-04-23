@@ -8,6 +8,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "fs_msgs/msg/control_command.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/header.hpp"
 
 #include "node/node_ros_can.hpp"
 // #include "cubemars/steering_utils.hpp"
@@ -30,7 +31,7 @@ RosCan::RosCan() : Node("node_ros_can") {
   emergencyListener = this->create_subscription<std_msgs::msg::String>(
       "/as_msgs/emergency", 10,
       std::bind(&RosCan::emergency_callback, this, std::placeholders::_1));  // maybe change type
-  missionFinishedListener = this->create_subscription<std_msgs::msg::String>(
+  missionFinishedListener = this->create_subscription<fs_msgs::msg::FinishedSignal>(
       "/as_msgs/mission_finished", 10,
       std::bind(&RosCan::mission_finished_callback, this,
                 std::placeholders::_1));  // maybe change type
@@ -44,9 +45,9 @@ RosCan::RosCan() : Node("node_ros_can") {
   // initialize the CAN library
   canInitializeLibrary();
   // A channel to a CAN circuit is opened. The channel depend on the hardware
-  hnd = canOpenChannel(1, canOPEN_CAN_FD);
+  hnd = canOpenChannel(0, canOPEN_EXCLUSIVE);
   // Setup CAN parameters for the channel
-  stat = canSetBusParams(hnd, canBITRATE_500K, 0, 0, 0, 0, 0);  // check these values later
+  stat = canSetBusParams(hnd, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
   if (stat != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN parameters");
   }
@@ -169,38 +170,44 @@ void RosCan::canSniffer() {
   unsigned int flag;
   unsigned long time;
 
-  stat = canRead(hnd, &id, &msg, &dlc, &flag, &time);
-  while (stat == canOK) {
-    // Convert the CAN message to a ROS message and publish it
-    canInterpreter(id, msg, dlc, flag, time);
-
+  do {
     stat = canRead(hnd, &id, &msg, &dlc, &flag, &time);
-  }
+    canInterpreter(id, msg, dlc, flag, time);
+    RCLCPP_DEBUG(this->get_logger(), "Received message with ID: %x", id);
+  } while (stat == canOK);
 }
 
 void RosCan::canInterpreter(long id, unsigned char msg[8], unsigned int dlc, unsigned int flag,
                             unsigned long time) {
   switch (id) {
-    case MASTER_STATUS:
+    case MASTER_STATUS: {
       canInterpreterMasterStatus(msg);
       break;
-    case IMU_YAW_RATE_ACC_Y_ID:
+    }
+    case IMU_YAW_RATE_ACC_Y_ID: {
       imuYawAccYPublisher(msg);
       break;
-    case IMU_ROLL_RATE_ACC_X_ID:
+    }
+    case IMU_ROLL_RATE_ACC_X_ID: {
       imuRollAccXPublisher(msg);
       break;
-    case IMU_PITCH_RATE_ACC_Z_ID:
+    }
+    case IMU_PITCH_RATE_ACC_Z_ID: {
       imuPitchAccZPublisher(msg);
       break;
-    case TEENSY_C1:
+    }
+    case TEENSY_C1: {
       if (msg[0] == TEENSY_C1_RR_RPM_CODE) rrRPMPublisher(msg);
       break;
-    case STEERING_CUBEM_ID:
+    }
+    case STEERING_CUBEM_ID: {
       steeringAngleCubeMPublisher(msg);
       break;
-    case STEERING_BOSCH_ID:
+    }
+    case STEERING_BOSCH_ID: {
       steeringAngleBoschPublisher(msg);
+      break;
+    }
     default:
       break;
   }
@@ -235,6 +242,7 @@ void RosCan::canInterpreterMasterStatus(unsigned char msg[8]) {
  */
 void RosCan::opStatusPublisher() {
   auto message = custom_interfaces::msg::OperationalStatus();
+  message.header.stamp = this->get_clock()->now();
   message.go_signal = goSignal;
   message.as_mission = asMission;
   operationalStatus->publish(message);
@@ -245,9 +253,10 @@ void RosCan::opStatusPublisher() {
  * @param msg - the CAN msg
  */
 void RosCan::imuYawAccYPublisher(unsigned char msg[8]) {
-  float yawRate = ((msg[1] << 8) | msg[0]) * QUANTIZATION_GYRO;
-  float accY = ((msg[5] << 8) | msg[4]) * QUANTIZATION_ACC;
+  float yawRate = (msg[0]) * QUANTIZATION_GYRO;
+  float accY = (msg[4]) * QUANTIZATION_ACC;
   auto message = custom_interfaces::msg::ImuData();
+  message.header.stamp = this->get_clock()->now();
   message.gyro = yawRate;
   message.acc = accY;
   RCLCPP_DEBUG(this->get_logger(), "Received IMU Acc.Y and Yaw Rate Message: Yaw Rate: %f --- Acc Y: %f", yawRate, accY);
@@ -259,9 +268,10 @@ void RosCan::imuYawAccYPublisher(unsigned char msg[8]) {
  * @param msg - the CAN msg
  */
 void RosCan::imuRollAccXPublisher(unsigned char msg[8]) {
-  float rollRate = ((msg[1] << 8) | msg[0]) * QUANTIZATION_GYRO;
-  float accX = ((msg[5] << 8) | msg[4]) * QUANTIZATION_ACC;
+  float rollRate = (msg[0]) * QUANTIZATION_GYRO;
+  float accX = (msg[4]) * QUANTIZATION_ACC;
   auto message = custom_interfaces::msg::ImuData();
+  message.header.stamp = this->get_clock()->now();
   message.gyro = rollRate;
   message.acc = accX;
   RCLCPP_DEBUG(this->get_logger(), "Received IMU Acc.X and Roll Rate Message: Roll Rate: %f --- Acc X: %f", rollRate, accX);
@@ -273,9 +283,10 @@ void RosCan::imuRollAccXPublisher(unsigned char msg[8]) {
  * @param msg - the CAN msg
  */
 void RosCan::imuPitchAccZPublisher(unsigned char msg[8]) {
-  float pitchRate = ((msg[1] << 8) | msg[0]) * QUANTIZATION_GYRO;
-  float accZ = ((msg[5] << 8) | msg[4]) * QUANTIZATION_ACC;
+  float pitchRate = (msg[0]) * QUANTIZATION_GYRO;
+  float accZ = (msg[4]) * QUANTIZATION_ACC;
   auto message = custom_interfaces::msg::ImuData();
+  message.header.stamp = this->get_clock()->now();
   message.gyro = pitchRate;
   message.acc = accZ;
   RCLCPP_DEBUG(this->get_logger(), "Received IMU Acc.Z and Pitch Rate Message: Pitch Rate: %f --- Acc Z: %f", pitchRate, accZ);
@@ -289,6 +300,7 @@ void RosCan::imuPitchAccZPublisher(unsigned char msg[8]) {
 void RosCan::steeringAngleCubeMPublisher(unsigned char msg[8]) {
   int angle = (msg[1] << 8) | msg[0];
   auto message = custom_interfaces::msg::SteeringAngle();
+  message.header.stamp = this->get_clock()->now();
   message.steering_angle = angle;
   steeringAngleCubeM->publish(message);
 }
@@ -317,6 +329,7 @@ void RosCan::steeringAngleBoschPublisher(unsigned char msg[8]) {
 
   int angle = (msg[1] << 8) | msg[0];
   auto message = custom_interfaces::msg::SteeringAngle();
+  message.header.stamp = this->get_clock()->now();
   message.steering_angle = angle;
   steeringAngleCubeM->publish(message);
 }
@@ -328,6 +341,7 @@ void RosCan::steeringAngleBoschPublisher(unsigned char msg[8]) {
 void RosCan::rrRPMPublisher(unsigned char msg[8]) {
   float rrRPM = ((msg[4] << 24) | (msg[3] << 16) | (msg[2] << 8) | msg[1]) / 100.0f;
   auto message = custom_interfaces::msg::WheelRPM();
+  message.header.stamp = this->get_clock()->now();
   message.rr_rpm = rrRPM;
   rrRPMPub->publish(message);
 }
@@ -339,6 +353,7 @@ void RosCan::rrRPMPublisher(unsigned char msg[8]) {
 void RosCan::rlRPMPublisher(unsigned char msg[8]) {
   float rlRPM = ((msg[4] << 24) | (msg[3] << 16) | (msg[2] << 8) | msg[1]) / 100.0f;
   auto message = custom_interfaces::msg::WheelRPM();
+  message.header.stamp = this->get_clock()->now();
   message.rl_rpm = rlRPM;
   rlRPMPub->publish(message);
 }
