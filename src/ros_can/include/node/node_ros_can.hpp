@@ -248,17 +248,17 @@ class RosCan : public rclcpp::Node {
   /**
    * @brief Function to handle the emergency message
    */
-  void emergency_callback(std_msgs::msg::String msg);
+  void emergency_callback(std_msgs::msg::String::SharedPtr msg);
 
   /**
    * @brief Function to handle the mission finished message
    */
-  void mission_finished_callback(fs_msgs::msg::FinishedSignal msg);
+  void mission_finished_callback(fs_msgs::msg::FinishedSignal::SharedPtr msg);
 
   /**
    * @brief Function to handle the control command message
    */
-  void control_callback(fs_msgs::msg::ControlCommand msg);
+  void control_callback(fs_msgs::msg::ControlCommand::SharedPtr msg);
 
   /**
    * @brief Function to send the alive message from the AS CU to Master

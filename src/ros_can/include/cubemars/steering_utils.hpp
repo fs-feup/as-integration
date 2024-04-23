@@ -39,12 +39,11 @@
 // }
 
 void send_steering_angle_command(char controller_id, float angle, unsigned int* send_id, char* buffer) {
-    int send_index = 0;
     int converted_angle = static_cast<int>((angle * 1000000.0)); // Indicated by documentation
-    for (unsigned int i = 3; i >= 0; i--) {
+    for (int i = 3; i >= 0; i--) {
         buffer[i] = converted_angle >> (8 * i);
     }
-    send_index = controller_id | static_cast<unsigned int>(4 << 8);
+    *send_id = controller_id | static_cast<unsigned int>(4 << 8);
 }
 
 #endif // STEERING_UTILS_HPP

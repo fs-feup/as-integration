@@ -10,7 +10,7 @@
 #include "std_msgs/msg/string.hpp"
 
 #include "node/node_ros_can.hpp"
-#include "cubemars/cubemars.hpp"
+// #include "cubemars/steering_utils.hpp"
 
 RosCan::RosCan() : Node("node_ros_can") {
   operationalStatus =
@@ -117,7 +117,7 @@ void RosCan::emergency_callback(std_msgs::msg::String::SharedPtr msg) {
   }
 }
 
-void RosCan::mission_finished_callback(std_msgs::msg::String::SharedPtr msg) {
+void RosCan::mission_finished_callback(fs_msgs::msg::FinishedSignal::SharedPtr msg) {
   // Prepare the emergency message
   long id = AS_CU_NODE_ID;            // Set the CAN ID
   unsigned char data = MISSION_FINISHED_CODE;  // Set the data
@@ -250,6 +250,7 @@ void RosCan::imuYawAccYPublisher(unsigned char msg[8]) {
   auto message = custom_interfaces::msg::ImuData();
   message.gyro = yawRate;
   message.acc = accY;
+  RCLCPP_DEBUG(this->get_logger(), "Received IMU Acc.Y and Yaw Rate Message: Yaw Rate: %f --- Acc Y: %f", yawRate, accY);
   imuYawAccYPub->publish(message);
 }
 
@@ -263,6 +264,7 @@ void RosCan::imuRollAccXPublisher(unsigned char msg[8]) {
   auto message = custom_interfaces::msg::ImuData();
   message.gyro = rollRate;
   message.acc = accX;
+  RCLCPP_DEBUG(this->get_logger(), "Received IMU Acc.X and Roll Rate Message: Roll Rate: %f --- Acc X: %f", rollRate, accX);
   imuRollAccXPub->publish(message);
 }
 
@@ -276,6 +278,7 @@ void RosCan::imuPitchAccZPublisher(unsigned char msg[8]) {
   auto message = custom_interfaces::msg::ImuData();
   message.gyro = pitchRate;
   message.acc = accZ;
+  RCLCPP_DEBUG(this->get_logger(), "Received IMU Acc.Z and Pitch Rate Message: Pitch Rate: %f --- Acc Z: %f", pitchRate, accZ);
   imuPitchAccZPub->publish(message);
 }
 
