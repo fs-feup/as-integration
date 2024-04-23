@@ -11,6 +11,7 @@
 #include "custom_interfaces/msg/steering_angle.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "fs_msgs/msg/control_command.hpp"
+#include "fs_msgs/msg/finished_signal.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/imu.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -42,6 +43,21 @@
  * value of msg[0] for RR RPM Code
  */
 #define TEENSY_C1_RR_RPM_CODE 0x11
+
+/*
+ * value of msg[0] for AS CU alive message
+ */
+#define ALIVE_MESSAGE 0x41
+
+/**
+ * value of msg[0] for mission finished
+*/
+#define MISSION_FINISHED_CODE 0x42
+
+/**
+ * value of msg[0] for emergency detected by AS CU
+*/
+#define EMERGENCY_CODE 0x43
 
 /*
  * ID used for:
@@ -99,6 +115,11 @@
  */
 #define QUANTIZATION_GYRO 0.005
 
+/**
+ * ID used for AS_CU messages
+*/
+#define AS_CU_NODE_ID 0x400
+
 #define THROTTLE_UPPER_LIMIT 100
 #define THROTTLE_LOWER_LIMIT 0
 #define STEERING_UPPER_LIMIT 100
@@ -154,6 +175,7 @@ class RosCan : public rclcpp::Node {
    *
    *void busStatus_callback(std_msgs::msg::String busStatus);
    */
+  
   /**
    * @brief Function cyclically reads all CAN msg from buffer
    */
@@ -226,18 +248,21 @@ class RosCan : public rclcpp::Node {
   /**
    * @brief Function to handle the emergency message
    */
-  void emergency_callback(std_msgs::msg::String::SharedPtr msg);
+  void emergency_callback(std_msgs::msg::String msg);
 
   /**
    * @brief Function to handle the mission finished message
    */
-  void mission_finished_callback(std_msgs::msg::String::SharedPtr msg);
+  void mission_finished_callback(fs_msgs::msg::FinishedSignal msg);
 
   /**
    * @brief Function to handle the control command message
    */
-  void control_callback(fs_msgs::msg::ControlCommand::SharedPtr msg);
+  void control_callback(fs_msgs::msg::ControlCommand msg);
 
+  /**
+   * @brief Function to send the alive message from the AS CU to Master
+  */
   void alive_msg_callback();
 
  public:
