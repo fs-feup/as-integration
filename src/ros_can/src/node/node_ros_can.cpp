@@ -331,6 +331,7 @@ void RosCan::steeringAngleBoschPublisher(unsigned char msg[8]) {
   auto message = custom_interfaces::msg::SteeringAngle();
   message.header.stamp = this->get_clock()->now();
   message.steering_angle = angle;
+  RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle: %d", angle);
   steeringAngleCubeM->publish(message);
 }
 

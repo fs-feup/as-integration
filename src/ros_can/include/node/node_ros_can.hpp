@@ -75,12 +75,12 @@
  * ID used for:
  * Steering angle from Bosch
  */
-#define STEERING_BOSCH_ID 0x2B0
+#define STEERING_BOSCH_ID 0xa1
 
 /* ID used for:
  * Publish cmds to bamocar
  */
-#define BAMO_RECEIVER 0X201
+#define BAMO_RECEIVER 0x201
 
 /*
  * ID used from the IMU for:
