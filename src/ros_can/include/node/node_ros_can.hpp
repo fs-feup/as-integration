@@ -69,7 +69,13 @@
  * ID used for:
  * Steering angle from Steering Actuator
  */
-#define STEERING_CUBEM_ID 0x700
+#define STEERING_CUBEM_ID 0x295D
+
+/*
+ * ID used for:
+ * Steering angle to Steering Actuator
+ */
+#define STEERING_CUBEM_COMMAND_ID 0x5D
 
 /*
  * ID used for:
@@ -168,6 +174,8 @@ class RosCan : public rclcpp::Node {
   5 - EBS_Test
   6 - Inspection*/
   int asMission;
+
+  double cubem_steering_angle = 0.0;
 
   /**
    * @brief Function to turn ON and OFF the CAN BUS

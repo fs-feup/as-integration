@@ -38,7 +38,7 @@
 //     ((uint32_t)CAN_PACKET_SET_POS << 8), buffer, send_index);
 // }
 
-void send_steering_angle_command(char controller_id, float angle, unsigned int* send_id, char* buffer) {
+void create_steering_angle_command(char controller_id, float angle, unsigned int* send_id, char* buffer) {
     int converted_angle = static_cast<int>((angle * 1000000.0)); // Indicated by documentation
     for (int i = 3; i >= 0; i--) {
         buffer[i] = converted_angle >> (8 * i);

@@ -11,7 +11,7 @@
 #include "std_msgs/msg/header.hpp"
 
 #include "node/node_ros_can.hpp"
-// #include "cubemars/steering_utils.hpp"
+#include "cubemars/steering_utils.hpp"
 
 RosCan::RosCan() : Node("node_ros_can") {
   operationalStatus =
@@ -73,22 +73,33 @@ void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd
     RCLCPP_ERROR(this->get_logger(), "Throttle value out of range");
     return;
   }
-  if (currentState == State::AS_Driving) {
-    RCLCPP_DEBUG(this->get_logger(), "State is Driving: Steering: %f, Throttle: %f",
+  if (currentState == State::AS_Driving || true) {
+    RCLCPP_INFO(this->get_logger(), "State is Driving: Steering: %f, Throttle: %f",
                  controlCmd->steering, controlCmd->throttle);
     canInitializeLibrary();  // initialize the CAN library again, just in case (could be removed)
 
     // Prepare the steering message
-    long steering_id = STEERING_CUBEM_ID;
-    void* steering_requestData = static_cast<void*>(&controlCmd->steering);
-    unsigned int steering_dlc = 8;
-    unsigned int flag = 0;
+    unsigned int steering_id = 0;
+    long id = 0x45d;
+    char buffer[4];
+    create_steering_angle_command(STEERING_CUBEM_COMMAND_ID, controlCmd->steering, &steering_id, buffer);
+    // long steering_id = STEERING_CUBEM_COMMAND_ID;
+    RCLCPP_INFO(this->get_logger(), "ID: %x", id);
+    void* steering_requestData = static_cast<void*>(buffer);
+    unsigned int steering_dlc = 4;
+    unsigned int flag = canMSG_EXT;
 
     // Write the steering message to the CAN bus
-    stat = canWrite(hnd, steering_id, steering_requestData, steering_dlc, flag);
+    stat = canWrite(hnd, id, steering_requestData, steering_dlc, flag);
     if (stat != canOK) {
       RCLCPP_ERROR(this->get_logger(), "Failed to write steering to CAN bus");
     }
+
+    if (stat == canOK) {
+      RCLCPP_INFO(this->get_logger(), "Write steering to CAN bus success");
+    }
+
+    RCLCPP_INFO(this->get_logger(), "Write res: %d", stat);
 
     // Prepare the throttle message
     long throttle_id = BAMO_RECEIVER; 
@@ -298,10 +309,13 @@ void RosCan::imuPitchAccZPublisher(unsigned char msg[8]) {
  * @param msg - the CAN msg
  */
 void RosCan::steeringAngleCubeMPublisher(unsigned char msg[8]) {
-  int angle = (msg[1] << 8) | msg[0];
+  int angle = (msg[3] << 24) | (msg[2] << 16) | (msg[1] << 8) | msg[0];
+  int speed = (msg[7] << 24) | (msg[6] << 16) | (msg[5] << 8) | msg[4];
   auto message = custom_interfaces::msg::SteeringAngle();
   message.header.stamp = this->get_clock()->now();
-  message.steering_angle = angle;
+  message.steering_angle = static_cast<double>(angle) / 1000000;
+  message.steering_speed = static_cast<double>(angle);
+  RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %lf", message.steering_angle);
   steeringAngleCubeM->publish(message);
 }
 
