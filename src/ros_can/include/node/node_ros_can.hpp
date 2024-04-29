@@ -159,7 +159,7 @@ class RosCan : public rclcpp::Node {
   rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imuRollAccXPub;
   rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imuPitchAccZPub;
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr steeringAngleBosch;
-  rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr steeringAngleCubeM;
+  rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr bosch_steering_angle_publisher;
 
   // Enum to hold the state of the AS
   State currentState = State::AS_Off;

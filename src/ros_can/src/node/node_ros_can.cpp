@@ -4,6 +4,8 @@
 #include <functional>
 #include <memory>
 #include <string>
+// #include <bitset>
+// #include <unistd.h>
 
 #include "rclcpp/rclcpp.hpp"
 #include "fs_msgs/msg/control_command.hpp"
@@ -12,6 +14,7 @@
 
 #include "node/node_ros_can.hpp"
 #include "cubemars/steering_utils.hpp"
+
 
 RosCan::RosCan() : Node("node_ros_can") {
   operationalStatus =
@@ -24,8 +27,8 @@ RosCan::RosCan() : Node("node_ros_can") {
   imuRollAccXPub = this->create_publisher<custom_interfaces::msg::ImuData>("imuRollAccXPub", 10);
   imuPitchAccZPub = this->create_publisher<custom_interfaces::msg::ImuData>("imuPitchAccZPub", 10);
 
-  steeringAngleCubeM =
-      this->create_publisher<custom_interfaces::msg::SteeringAngle>("steeringAngleCubeM", 10);
+  bosch_steering_angle_publisher =
+      this->create_publisher<custom_interfaces::msg::SteeringAngle>("/vehicle/bosch_steering_angle", 10);
   controlListener = this->create_subscription<fs_msgs::msg::ControlCommand>(
       "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
   emergencyListener = this->create_subscription<std_msgs::msg::String>(
@@ -60,6 +63,29 @@ RosCan::RosCan() : Node("node_ros_can") {
   if (stat != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to turn on CAN bus");
   }
+
+  // long id = 0x725;
+  // char buffer[8] = {0};
+  // buffer[0] = 0x50;
+  // void* request_data = static_cast<void*>(buffer);
+  // unsigned int dlc = 8;
+  // unsigned int flag = 0;
+
+  // // Write the steering message to the CAN bus
+  // stat = canWrite(hnd, id, request_data, dlc, flag);
+  // if (stat != canOK) {
+  //   RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering angle sensor");
+  // }
+  // sleep(2);
+  // buffer[0] = 0x30;
+  // request_data = static_cast<void*>(buffer);
+  
+  // // Write the steering message to the CAN bus
+  // stat = canWrite(hnd, id, request_data, dlc, flag);
+  // if (stat != canOK) {
+  //   RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering angle sensor");
+  // }
+  // sleep(2);
 }
 
 void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd) {
@@ -328,14 +354,15 @@ void RosCan::steeringAngleCubeMPublisher(unsigned char msg[8]) {
     this->cubem_set_origin();
   }
 
+  // TODO: fix this code
   int angle = (msg[3] << 24) | (msg[2] << 16) | (msg[1] << 8) | msg[0];
   int speed = (msg[7] << 24) | (msg[6] << 16) | (msg[5] << 8) | msg[4];
   auto message = custom_interfaces::msg::SteeringAngle();
   message.header.stamp = this->get_clock()->now();
   message.steering_angle = static_cast<double>(angle) / 1000000;
-  message.steering_speed = static_cast<double>(angle);
+  message.steering_speed = static_cast<double>(speed);
   RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %lf", message.steering_angle);
-  steeringAngleCubeM->publish(message);
+  bosch_steering_angle_publisher->publish(message);
 }
 
 /**
@@ -344,28 +371,35 @@ void RosCan::steeringAngleCubeMPublisher(unsigned char msg[8]) {
  */
 void RosCan::steeringAngleBoschPublisher(unsigned char msg[8]) {
   // Mask to check the first 3 bits
-  char mask = 0b00000111;
+  char mask = 0b00100000;
 
-  // Extract the first 3 bits
-  char firstThreeBits = msg[3] & mask;
+  // Extract bits 7,6,5
+  char first_three_bits = msg[6] & mask;
 
-  if (firstThreeBits == mask) {
-    int angle = (msg[1] << 8) | msg[0];
-    int speed = msg[2];
-    auto message = custom_interfaces::msg::SteeringAngle();
-    message.steering_angle = angle;
-    message.steering_speed = speed;
-    steeringAngleBosch->publish(message);
-  } else {
-    RCLCPP_ERROR(this->get_logger(), "Invalid message received from Bosch Speed Sensor");
+  // Error flags
+  if (first_three_bits != mask) {
+    RCLCPP_ERROR(this->get_logger(), "Invalid message received from Bosch Steering Wheel Sensor");
+    return;
   }
 
-  int angle = (msg[1] << 8) | msg[0];
+  // Calculate angle
+  char checkSum = msg[0];
+  bool negative = msg[2] & 0b00000001;
+  short angle_value = msg[1] << 7 | (msg[2] >> 1);
+  float angle = negative ? - (angle_value / 10.0) : angle_value / 10.0;
+
+  // Calculate turning speed
+  negative = msg[4] & 0b00000001;
+  short speed_value = msg[3] << 7 | (msg[4] >> 1);
+  float speed = negative ? - (speed_value / 10.0) : speed_value / 10.0;
+
+  // Send message
   auto message = custom_interfaces::msg::SteeringAngle();
   message.header.stamp = this->get_clock()->now();
   message.steering_angle = angle;
-  RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle: %d", angle);
-  steeringAngleCubeM->publish(message);
+  message.steering_speed = speed;
+  RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle: %f", angle);
+  bosch_steering_angle_publisher->publish(message);
 }
 
 /**
