@@ -79,15 +79,12 @@ void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd
     canInitializeLibrary();  // initialize the CAN library again, just in case (could be removed)
 
     // Prepare the steering message
-    unsigned int steering_id = 0;
-    long id = 0x45d;
+    long id = STEERING_COMMAND_CUBEM_ID;
     char buffer[4];
-    create_steering_angle_command(STEERING_CUBEM_COMMAND_ID, controlCmd->steering, &steering_id, buffer);
-    // long steering_id = STEERING_CUBEM_COMMAND_ID;
-    RCLCPP_INFO(this->get_logger(), "ID: %x", id);
+    create_steering_angle_command(controlCmd->steering, buffer);
     void* steering_requestData = static_cast<void*>(buffer);
     unsigned int steering_dlc = 4;
-    unsigned int flag = canMSG_EXT;
+    unsigned int flag = canMSG_EXT; // Steering motor used CAN Extended
 
     // Write the steering message to the CAN bus
     stat = canWrite(hnd, id, steering_requestData, steering_dlc, flag);
@@ -155,6 +152,21 @@ void RosCan::alive_msg_callback() {
   stat = canWrite(hnd, id, msg, dlc, flag);
   if (stat != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to write alive message to CAN bus");
+  }
+}
+
+void RosCan::cubem_set_origin() {
+  long id = SET_ORIGIN_CUBEM_ID;
+  char buffer[1];
+  buffer[0] = 0x00;
+  void* steering_requestData = static_cast<void*>(buffer);
+  unsigned int steering_dlc = 1;
+  unsigned int flag = canMSG_EXT; // Steering motor used CAN Extended
+
+  // Write the steering message to the CAN bus
+  stat = canWrite(hnd, id, steering_requestData, steering_dlc, flag);
+  if (stat != canOK) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering controller");
   }
 }
 
@@ -309,6 +321,13 @@ void RosCan::imuPitchAccZPublisher(unsigned char msg[8]) {
  * @param msg - the CAN msg
  */
 void RosCan::steeringAngleCubeMPublisher(unsigned char msg[8]) {
+
+  // When steering motor wakes up, set its origin
+  if (!this->cubem_configuration_sent) {
+    this->cubem_configuration_sent = true;
+    this->cubem_set_origin();
+  }
+
   int angle = (msg[3] << 24) | (msg[2] << 16) | (msg[1] << 8) | msg[0];
   int speed = (msg[7] << 24) | (msg[6] << 16) | (msg[5] << 8) | msg[4];
   auto message = custom_interfaces::msg::SteeringAngle();

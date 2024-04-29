@@ -65,6 +65,24 @@
  */
 #define TEENSY_C1 0x123
 
+/**
+ * ID used for:
+ * Setting the origin of the steering motor
+ * FORMAT: 
+ * - 0x5: command mode (5 for setting origin)
+ * - 5d: controller id (set in upper computer cubemars application)
+*/
+#define SET_ORIGIN_CUBEM_ID 0x55d
+
+/**
+ * ID used for:
+ * Sending steering motor angle position command (in degrees)
+ * FORMAT: 
+ * - 0x4: command mode (4 for position mode)
+ * - 5d: controller id (set in upper computer cubemars application)
+*/
+#define STEERING_COMMAND_CUBEM_ID 0x45d
+
 /*
  * ID used for:
  * Steering angle from Steering Actuator
@@ -175,6 +193,14 @@ class RosCan : public rclcpp::Node {
   6 - Inspection*/
   int asMission;
 
+  /**
+   * Cubemars set origin sent
+  */
+  bool cubem_configuration_sent = false;
+
+  /**
+   * Steering angle from cubemars
+  */
   double cubem_steering_angle = 0.0;
 
   /**
@@ -272,6 +298,11 @@ class RosCan : public rclcpp::Node {
    * @brief Function to send the alive message from the AS CU to Master
   */
   void alive_msg_callback();
+
+  /**
+   * @brief Sets the angle origin of the Cubemars steering actuator
+  */
+  void cubem_set_origin();
 
  public:
   /**
