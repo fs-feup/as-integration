@@ -17,4 +17,5 @@ void create_steering_angle_command(float angle, char* buffer) {
     }
 }
 
-#endif // STEERING_UTILS_HPP
+
+#endif // STEERING_UTILS

@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 
+#include "../canlib_wrappers/ican_lib_wrapper.hpp"
 #include "custom_interfaces/msg/imu.hpp"
 #include "custom_interfaces/msg/imu_data.hpp"
 #include "custom_interfaces/msg/operational_status.hpp"
@@ -164,7 +165,9 @@ class RosCan : public rclcpp::Node {
   // Enum to hold the state of the AS
   State currentState = State::AS_Off;
 
-  // rclcpp::Subscription<std_msgs::msg::String::SharedPtr> busStatus;
+  std::shared_ptr<ICanLibWrapper> canLibWrapper;
+
+    // rclcpp::Subscription<std_msgs::msg::String::SharedPtr> busStatus;
   rclcpp::Subscription<fs_msgs::msg::ControlCommand>::SharedPtr controlListener;
   rclcpp::Subscription<std_msgs::msg::String>::SharedPtr emergencyListener;
   rclcpp::Subscription<fs_msgs::msg::FinishedSignal>::SharedPtr missionFinishedListener;
@@ -305,8 +308,20 @@ class RosCan : public rclcpp::Node {
   void cubem_set_origin();
 
  public:
-  /**
-   * @brief Contructor for the RosCan class
-   */
-  RosCan();
+    void setASDrivingState();
+    void setASOffState();
+
+    /**
+     * @brief Function to handle the control command message
+     */
+    void test_control_callback(fs_msgs::msg::ControlCommand::SharedPtr msg);
+
+    /**
+     * @brief Contructor for the RosCan class
+     */
+    RosCan(std::shared_ptr<ICanLibWrapper> canLibWrapperParam);
+    /**
+     * @brief Public can sniffer
+     */
+    void testCanSniffer();
 };

@@ -1,5 +1,6 @@
 #include <memory>
 
+#include "../include/canlib_wrappers/can_lib_wrapper.hpp"
 #include "node/node_ros_can.hpp"
 #include "rclcpp/rclcpp.hpp"
 /**
@@ -13,7 +14,8 @@
  */
 int main(int argc, char* argv[]) {
   rclcpp::init(argc, argv);
-  rclcpp::spin(std::make_shared<RosCan>());
+  auto canLibWrapper = std::make_shared<CanLibWrapper>();
+  rclcpp::spin(std::make_shared<RosCan>(canLibWrapper));
   rclcpp::shutdown();
   return 0;
 }
