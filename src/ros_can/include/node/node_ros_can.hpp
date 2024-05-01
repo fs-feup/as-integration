@@ -151,164 +151,173 @@
 #define STEERING_LOWER_LIMIT 0
 
 class RosCan : public rclcpp::Node {
- private:
-  enum class State { AS_Manual, AS_Off, AS_Ready, AS_Driving, AS_Finished, AS_Emergency };
-  rclcpp::Publisher<custom_interfaces::msg::OperationalStatus>::SharedPtr operationalStatus;
-  rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rlRPMPub;
-  rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rrRPMPub;
-  rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imuYawAccYPub;
-  rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imuRollAccXPub;
-  rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imuPitchAccZPub;
-  rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr steeringAngleBosch;
-  rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr bosch_steering_angle_publisher;
+private:
+    enum class State {
+        AS_Manual, AS_Off, AS_Ready, AS_Driving, AS_Finished, AS_Emergency
+    };
+    rclcpp::Publisher<custom_interfaces::msg::OperationalStatus>::SharedPtr operationalStatus;
+    rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rlRPMPub;
+    rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rrRPMPub;
+    rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imuYawAccYPub;
+    rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imuRollAccXPub;
+    rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imuPitchAccZPub;
+    rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr steeringAngleBosch;
+    rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr bosch_steering_angle_publisher;
 
-  // Enum to hold the state of the AS
-  State currentState = State::AS_Off;
+    // Enum to hold the state of the AS
+    State currentState = State::AS_Off;
 
-  std::shared_ptr<ICanLibWrapper> canLibWrapper;
+    std::shared_ptr<ICanLibWrapper> canLibWrapper;
 
     // rclcpp::Subscription<std_msgs::msg::String::SharedPtr> busStatus;
-  rclcpp::Subscription<fs_msgs::msg::ControlCommand>::SharedPtr controlListener;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr emergencyListener;
-  rclcpp::Subscription<fs_msgs::msg::FinishedSignal>::SharedPtr missionFinishedListener;
-  rclcpp::TimerBase::SharedPtr timer;
-  rclcpp::TimerBase::SharedPtr timerAliveMsg;
+    rclcpp::Subscription<fs_msgs::msg::ControlCommand>::SharedPtr controlListener;
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr emergencyListener;
+    rclcpp::Subscription<fs_msgs::msg::FinishedSignal>::SharedPtr missionFinishedListener;
+    rclcpp::TimerBase::SharedPtr timer;
+    rclcpp::TimerBase::SharedPtr timerAliveMsg;
 
-  // Holds a handle to the CAN channel
-  canHandle hnd;
-  // Status returned by the Canlib calls
-  canStatus stat;
+    // Holds a handle to the CAN channel
+    canHandle hnd;
+    // Status returned by the Canlib calls
+    canStatus stat;
 
-  /*
-  goSignal:
-  0 - Stop
-  1 - Go
-  */
-  bool goSignal = 0;
+    /*
+    goSignal:
+    0 - Stop
+    1 - Go
+    */
+    bool goSignal = 0;
 
-  /*Current Mission:
-  0 - Manual
-  1 - Acceleration
-  2 - Skidpad
-  3 - Autocross
-  4 - Trackdrive
-  5 - EBS_Test
-  6 - Inspection*/
-  int asMission;
+    /*Current Mission:
+    0 - Manual
+    1 - Acceleration
+    2 - Skidpad
+    3 - Autocross
+    4 - Trackdrive
+    5 - EBS_Test
+    6 - Inspection*/
+    int asMission;
 
-  /**
-   * Cubemars set origin sent
-  */
-  bool cubem_configuration_sent = false;
+    /**
+     * Cubemars set origin sent
+    */
+    bool cubem_configuration_sent = false;
 
-  /**
-   * Steering angle from cubemars
-  */
-  double cubem_steering_angle = 0.0;
+    /**
+     * Steering angle from cubemars
+    */
+    double cubem_steering_angle = 0.0;
 
-  /**
-   * @brief Function to turn ON and OFF the CAN BUS
-   * @param busStatus - the status of the bus
-   *
-   *void busStatus_callback(std_msgs::msg::String busStatus);
-   */
-  
-  /**
-   * @brief Function cyclically reads all CAN msg from buffer
-   */
-  void canSniffer();
+    /**
+     * @brief Function to turn ON and OFF the CAN BUS
+     * @param busStatus - the status of the bus
+     *
+     *void busStatus_callback(std_msgs::msg::String busStatus);
+     */
 
-  /**
-   * @brief Function to interpret the CAN msg
-   * @param id - the CAN msg id
-   * @param msg - the CAN msg
-   * @param dlc - the CAN msg length
-   * @param flag - the CAN msg flag - see kvaser documentation for more info
-   * @param time - the CAN msg time stamp
-   */
-  void canInterpreter(long id, unsigned char msg[8], unsigned int dlc, unsigned int flag,
-                      unsigned long time);
+    /**
+     * @brief Function cyclically reads all CAN msg from buffer
+     */
+    void canSniffer();
 
-  /**
-   * @brief Function to publish the Operational Status
-   */
-  void opStatusPublisher();
+    /**
+     * @brief Function to interpret the CAN msg
+     * @param id - the CAN msg id
+     * @param msg - the CAN msg
+     * @param dlc - the CAN msg length
+     * @param flag - the CAN msg flag - see kvaser documentation for more info
+     * @param time - the CAN msg time stamp
+     */
+    void canInterpreter(long id, unsigned char msg[8], unsigned int dlc, unsigned int flag,
+                        unsigned long time);
 
-  /**
-   * @brief Function to publish the Yaw rate and Acceleration in Y
-   * @param msg - the CAN msg
-   */
-  void imuYawAccYPublisher(unsigned char msg[8]);
+    /**
+     * @brief Function to publish the Operational Status
+     */
+    void opStatusPublisher();
 
-  /**
-   * @brief Function to publish the Roll rate and Acceleration in X
-   * @param msg - the CAN msg
-   */
-  void imuRollAccXPublisher(unsigned char msg[8]);
+    /**
+     * @brief Function to publish the Yaw rate and Acceleration in Y
+     * @param msg - the CAN msg
+     */
+    void imuYawAccYPublisher(unsigned char msg[8]);
 
-  /**
-   * @brief Function to publish the Pitch rate and Acceleration in Z
-   * @param msg - the CAN msg
-   */
-  void imuPitchAccZPublisher(unsigned char msg[8]);
+    /**
+     * @brief Function to publish the Roll rate and Acceleration in X
+     * @param msg - the CAN msg
+     */
+    void imuRollAccXPublisher(unsigned char msg[8]);
 
-  /**
-   * @brief Function to publish the steering angle form steering actuator (CubeMars)
-   * @param msg - the CAN msg
-   */
-  void steeringAngleCubeMPublisher(unsigned char msg[8]);
+    /**
+     * @brief Function to publish the Pitch rate and Acceleration in Z
+     * @param msg - the CAN msg
+     */
+    void imuPitchAccZPublisher(unsigned char msg[8]);
 
-  /**
-   * @brief Function to publish the steering angle form Bosch
-   * @param msg - the CAN msg
-   */
-  void steeringAngleBoschPublisher(unsigned char msg[8]);
+    /**
+     * @brief Function to publish the steering angle form steering actuator (CubeMars)
+     * @param msg - the CAN msg
+     */
+    void steeringAngleCubeMPublisher(unsigned char msg[8]);
 
-  /**
-   * @brief Function to publish the rear right rpm
-   * @param msg - the CAN msg
-   */
-  void rrRPMPublisher(unsigned char msg[8]);
+    /**
+     * @brief Function to publish the steering angle form Bosch
+     * @param msg - the CAN msg
+     */
+    void steeringAngleBoschPublisher(unsigned char msg[8]);
 
-  /**
-   * @brief Function to publish the rear left rpm
-   * @param msg - the CAN msg
-   */
-  void rlRPMPublisher(unsigned char msg[8]);
+    /**
+     * @brief Function to publish the rear right rpm
+     * @param msg - the CAN msg
+     */
+    void rrRPMPublisher(unsigned char msg[8]);
 
-  /**
-   * @brief Function to interpret the master status CAN msg
-   * @param msg - the CAN msg
-   */
-  void canInterpreterMasterStatus(unsigned char msg[8]);
+    /**
+     * @brief Function to publish the rear left rpm
+     * @param msg - the CAN msg
+     */
+    void rlRPMPublisher(unsigned char msg[8]);
 
-  /**
-   * @brief Function to handle the emergency message
-   */
-  void emergency_callback(std_msgs::msg::String::SharedPtr msg);
+    /**
+     * @brief Function to interpret the master status CAN msg
+     * @param msg - the CAN msg
+     */
+    void canInterpreterMasterStatus(unsigned char msg[8]);
 
-  /**
-   * @brief Function to handle the mission finished message
-   */
-  void mission_finished_callback(fs_msgs::msg::FinishedSignal::SharedPtr msg);
+    /**
+     * @brief Function to handle the emergency message
+     */
+    void emergency_callback(std_msgs::msg::String::SharedPtr msg);
 
-  /**
-   * @brief Function to handle the control command message
-   */
-  void control_callback(fs_msgs::msg::ControlCommand::SharedPtr msg);
+    /**
+     * @brief Function to handle the mission finished message
+     */
+    void mission_finished_callback(fs_msgs::msg::FinishedSignal::SharedPtr msg);
 
-  /**
-   * @brief Function to send the alive message from the AS CU to Master
-  */
-  void alive_msg_callback();
+    /**
+     * @brief Function to handle the control command message
+     */
+    void control_callback(fs_msgs::msg::ControlCommand::SharedPtr msg);
 
-  /**
-   * @brief Sets the angle origin of the Cubemars steering actuator
-  */
-  void cubem_set_origin();
+    /**
+     * @brief Function to send the alive message from the AS CU to Master
+    */
+    void alive_msg_callback();
 
- public:
+    /**
+     * @brief Sets the angle origin of the Cubemars steering actuator
+    */
+    void cubem_set_origin();
+
+public:
+    /**
+    * @brief public function that sets the currentState to AS_Driving, helpful for testing
+    */
     void setASDrivingState();
+
+/**
+ * @brief public function that sets the currentState to AS_Off, helpful for testing
+ */
     void setASOffState();
 
     /**
@@ -320,6 +329,7 @@ class RosCan : public rclcpp::Node {
      * @brief Contructor for the RosCan class
      */
     RosCan(std::shared_ptr<ICanLibWrapper> canLibWrapperParam);
+
     /**
      * @brief Public can sniffer
      */

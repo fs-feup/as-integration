@@ -397,14 +397,27 @@ void RosCan::rlRPMPublisher(unsigned char msg[8]) {
     rlRPMPub->publish(message);
 }
 
+/**
+ * @brief public function to test the control_callback
+ * @param msg - the controls from ROS(control) msg
+ */
 void RosCan::test_control_callback(fs_msgs::msg::ControlCommand::SharedPtr msg) {
     control_callback(msg);
 }
 
+/**
+ * @brief public function that sets the currentState to AS_Driving, helpful for testing
+ */
 void RosCan::setASDrivingState() { currentState = State::AS_Driving; }
 
+/**
+ * @brief public function that sets the currentState to AS_Off, helpful for testing
+ */
 void RosCan::setASOffState() { currentState = State::AS_Off; }
 
+/**
+ * @brief public function to test the canSniffer
+ */
 void RosCan::testCanSniffer() {
     canSniffer();
 }

@@ -5,9 +5,16 @@
 #include <rclcpp/rclcpp.hpp>
 #include <cmath>
 
-
+/**
+ * @class RosCanTest
+ * @brief A test fixture for testing the RosCan class. Initializes the roscan and test node, a wrapper for the mock canlib and an example of a controlCommand.
+ */
 class RosCanTest : public ::testing::Test {
 protected:
+/**
+     * @brief Set up the test fixture.
+     * This function is called before each test is run.
+     */
     void SetUp() override {
         if (!rclcpp::ok()) {
             rclcpp::init(0, nullptr);
@@ -24,7 +31,10 @@ protected:
 
         rosCan->setASDrivingState();
     }
-
+    /**
+     * @brief Tear down the test fixture.
+     * This function is called after each test is run.
+     */
     void TearDown() override {
         if (rclcpp::ok()) {
             rclcpp::shutdown();
@@ -46,19 +56,35 @@ protected:
     std::shared_ptr<RosCan> rosCan;
     std::shared_ptr<fs_msgs::msg::ControlCommand> controlCommand;
 };
-
+/**
+ * @brief Matcher to compare the value pointed by a void pointer to a given unsigned char value.
+ * @param value The expected unsigned char value.
+ */
 MATCHER_P(PointeeAsChar, value, "") {
     return *(static_cast<unsigned char *>(arg)) == value;
 }
-
+/**
+ * @brief Matcher to compare the value pointed by a void pointer to a given double value.
+ * @param value The expected double value.
+ */
 MATCHER_P(PointeeAsDouble, value, "") {
     return *(static_cast<double *>(arg)) == value;
 }
-
+/**
+     * @brief Check if two doubles are approximately equal.
+     * @param a The first double.
+     * @param b The second double.
+     * @param tolerance The tolerance for the comparison.
+     * @return True if the doubles are approximately equal, false otherwise.
+     */
 bool is_approx_equal(double a, double b, double tolerance) {
     return fabs(a - b) <= tolerance;
 }
-
+/**
+     * @brief Get the angle from void* passed to the function.
+     * @param steering_requestData The request data void*.
+     * @return The angle.
+     */
 float get_angle_from_request_data(void *steering_requestData) {
     char *buffer = static_cast<char *>(steering_requestData);
     int converted_angle = 0;
@@ -70,12 +96,18 @@ float get_angle_from_request_data(void *steering_requestData) {
     return angle;
 }
 
-
+/**
+ * @brief Matcher to compare the angle obtained from a void pointer to a given expected angle.
+ * @param expected_angle The expected angle in radians.
+ */
 MATCHER_P(PointeeAsAngleEqualTo, expected_angle, "") {
     float angle = get_angle_from_request_data(const_cast<void *>(arg));
     return is_approx_equal(angle, expected_angle, 0.0001);
 }
-
+/**
+ * @brief Action to set the value pointed by the third argument (arg2) to a given unsigned char array.
+ * @param value The unsigned char array to be copied.
+ */
 ACTION_P(SetArg2ToUnsignedChar, value) {
     auto *dest = static_cast<unsigned char *>(arg2);
     std::copy(value, value + 8, dest);
