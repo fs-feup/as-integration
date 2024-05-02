@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <rclcpp/rclcpp.hpp>
+#include <assert.h>
 
 #include "utils/constants.hpp"
 
@@ -23,11 +24,11 @@ void check_steering_safe(void* steering_payload_data) {
     unsigned char hex_sign = static_cast<unsigned char>
         ((static_cast<char*>(steering_payload_data))[0]);
     // SIGN OF THE ANGLE
-    RCLCPP_ASSERT(hex_sign == 0x00 || hex_sign == 0xff);
+    assert(hex_sign == 0x00 || hex_sign == 0xff);
     // HARD STEERING UPPER LIMIT
-    RCLCPP_ASSERT(hex_sign != 0x00 || hex_value < STEERING_UPPER_LIMIT_HEX_CHAR);
+    assert(hex_sign != 0x00 || hex_value < STEERING_UPPER_LIMIT_HEX_CHAR);
     // HARD STEERING LOWER LIMIT
-    RCLCPP_ASSERT(hex_sign != 0xff || hex_value > STEERING_LOWER_LIMIT_HEX_CHAR);
+    assert(hex_sign != 0xff || hex_value > STEERING_LOWER_LIMIT_HEX_CHAR);
     // DO NOT REMOVE PREVIOUS BLOCK
 }
 
@@ -41,14 +42,14 @@ void check_throttle_safe(void* throttle_payload_data) {
 
     // DO NOT REMOVE NEXT BLOCK
     unsigned char byte1 = static_cast<unsigned char>
-        ((static_cast<char*>(steering_payload_data))[1]);
+        ((static_cast<char*>(throttle_payload_data))[1]);
     unsigned char byte0 = static_cast<unsigned char>
-        ((static_cast<char*>(steering_payload_data))[0]);
-    int val = ((buffer[1] << 8) | (buffer[0] & 0xff));
+        ((static_cast<char*>(throttle_payload_data))[0]);
+    int val = ((byte1 << 8) | (byte0 & 0xff));
     // HARD THROTTLE UPPER LIMIT
-    RCLCPP_ASSERT(val <= BAMOCAR_MAX_THROTLE_VALUE);
+    assert(val <= BAMOCAR_MAX_SCALE);
     // HARD THROTTLE LOWER LIMIT
-    RCLCPP_ASSERT(val >= BAMOCAR_MIN_THROTLE_VALUE);
+    assert(val >= -BAMOCAR_MAX_SCALE);
     // DO NOT REMOVE PREVIOUS BLOCK
 }
 
@@ -89,20 +90,16 @@ int max_torque_dynamic_limits(int voltage, int rpm) {
 
 
 /**
- * @brief Checks if the CRC8 of the bosch steering angle message is correct
+ * @brief Checks if the CRC8 of the bosch steering angle msg is correct
  * 
  * @param msg the CAN msg
  * @return true if the CRC8 is correct
 */
 bool checkCRC8(const unsigned char msg[8]) {
-    if (message.size() != 8) {
-        std::cerr << "Error: Message must be exactly 8 bytes long." << std::endl;
-        return false;
-    }
 
-    char received_crc = message[0];  // First byte is the CRC
-    char calculated_crc = BOSCH_SA_INITIAL_CRC;  // Initial value
-    char polynomial = BOSCH_SA_CRC_POLYNOMIAL;  // CRC polynomial
+    unsigned char received_crc = msg[0];  // First byte is the CRC
+    unsigned char calculated_crc = BOSCH_SA_INITIAL_CRC;  // Initial value
+    unsigned char polynomial = BOSCH_SA_CRC_POLYNOMIAL;  // CRC polynomial
 
     for (int i = 1; i < 8; i++) {
         calculated_crc ^= msg[i];  // XOR byte into CRC
@@ -117,7 +114,7 @@ bool checkCRC8(const unsigned char msg[8]) {
 
     calculated_crc ^= 0xFF;  // Final XOR value
 
-    return calculatedCRC == receivedCRC;
+    return calculated_crc == received_crc;
 }
 
 #endif // SAFETY_MECHANISMS_HPP

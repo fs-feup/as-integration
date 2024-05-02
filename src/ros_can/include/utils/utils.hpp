@@ -20,11 +20,11 @@ void create_steering_angle_command(float angle, char* buffer) {
     }
 }
 
-#define LOG(message, level) \
-    do { \
-        rclcpp::Logger logger = rclcpp::get_logger("ros_can"); \
-        std::string complete_message = __FUNCTION__ + ":" + message; \
-        logger.log(level, complete_message); \
-    } while(0)
+// #define LOG(message, level) \
+//     do { \
+//         rclcpp::Logger logger = rclcpp::get_logger("ros_can"); \
+//         std::string complete_message = __FUNCTION__ + ":" + message; \
+//         logger.log(level, complete_message); \
+//     } while(0)
 
 #endif // STEERING_UTILS_HPP

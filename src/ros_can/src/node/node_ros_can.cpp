@@ -64,7 +64,7 @@ RosCan::RosCan() : Node("ros_can") {
     RCLCPP_ERROR(this->get_logger(), "Failed to turn on CAN bus");
   }
 
-  LOG("Node initialized", rclcpp::Logger::Level::Info);
+  // LOG("Node initialized", rclcpp::Logger::Level::Info);
 }
 
 
@@ -91,9 +91,9 @@ void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd
 
     // Prepare the steering message
     long id = STEERING_COMMAND_CUBEM_ID;
-    char buffer[4];
-    create_steering_angle_command(controlCmd->steering, buffer);
-    void* steering_requestData = static_cast<void*>(buffer);
+    char buffer_steering[4];
+    create_steering_angle_command(controlCmd->steering, buffer_steering);
+    void* steering_requestData = static_cast<void*>(buffer_steering);
     unsigned int steering_dlc = 4;
     unsigned int flag = canMSG_EXT; // Steering motor used CAN Extended
 
@@ -121,11 +121,11 @@ void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd
     }
 
     long throttle_id = BAMO_COMMAND_ID;
-    char buffer[3];
-    buffer[0] = TORQUE_COMMAND_BAMO_BYTE;
-    buffer[2] = (throttle_command >> 8) & 0xff;
-    buffer[1] = throttle_command & 0xff;
-    void* throttle_requestData = static_cast<void*>(buffer);
+    unsigned char buffer_throttle[3];
+    buffer_throttle[0] = TORQUE_COMMAND_BAMO_BYTE;
+    buffer_throttle[2] = (throttle_command >> 8) & 0xff;
+    buffer_throttle[1] = throttle_command & 0xff;
+    void* throttle_requestData = static_cast<void*>(buffer_throttle);
     unsigned int throttle_dlc = 3;
 
     // Write the throttle message to the CAN bus
@@ -145,7 +145,7 @@ void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd
 void RosCan::emergency_callback(std_msgs::msg::String::SharedPtr msg) {
   // Prepare the emergency message
   long id = AS_CU_NODE_ID;            // Set the CAN ID
-  const unsigned char data = EMERGENCY_CODE;  // Set the data
+  unsigned char data = EMERGENCY_CODE;  // Set the data
   void* requestData = &data;
   unsigned int dlc = 1;  // Set the length of the data
   unsigned int flag = 0;
@@ -161,7 +161,7 @@ void RosCan::emergency_callback(std_msgs::msg::String::SharedPtr msg) {
 void RosCan::mission_finished_callback(fs_msgs::msg::FinishedSignal::SharedPtr msg) {
   // Prepare the emergency message
   long id = AS_CU_NODE_ID;            // Set the CAN ID
-  const unsigned char data = MISSION_FINISHED_CODE;  // Set the data
+  unsigned char data = MISSION_FINISHED_CODE;  // Set the data
   void* requestData = &data;
   unsigned int dlc = 1;  // Set the length of the data
   unsigned int flag = 0;
@@ -176,7 +176,7 @@ void RosCan::mission_finished_callback(fs_msgs::msg::FinishedSignal::SharedPtr m
 
 void RosCan::alive_msg_callback() {
   long id = AS_CU_NODE_ID;            // Set the CAN ID
-  const unsigned char data = ALIVE_MESSAGE;  // Set the data
+  unsigned char data = ALIVE_MESSAGE;  // Set the data
   void* msg = &data;
   unsigned int dlc = 1;  // Msg length
   unsigned int flag = 0;
@@ -256,7 +256,7 @@ void RosCan::bosch_steering_angle_set_origin() {
  */
 void RosCan::canSniffer() {
   long id;
-  const unsigned char msg[8];
+  unsigned char msg[8];
   unsigned int dlc;
   unsigned int flag;
   unsigned long time;
@@ -264,7 +264,7 @@ void RosCan::canSniffer() {
   do {
     stat = canRead(hnd, &id, &msg, &dlc, &flag, &time);
     canInterpreter(id, msg, dlc, flag, time);
-    RCLCPP_DEBUG(this->get_logger(), "Received message with ID: %x", id);
+    RCLCPP_DEBUG(this->get_logger(), "Received message with ID: %x", id); // Intended
   } while (stat == canOK);
 }
 
@@ -406,7 +406,7 @@ void RosCan::steeringAngleCubeMPublisher(const unsigned char msg[8]) {
   message.header.stamp = this->get_clock()->now();
   message.steering_angle = static_cast<double>(angle) / 1000000;
   message.steering_speed = static_cast<double>(speed);
-  RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %lf", message.steering_angle);
+  RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %d", message.steering_angle);
   // bosch_steering_angle_publisher->publish(message); // wrong publisher
 }
 
@@ -461,15 +461,15 @@ void RosCan::rlRPMPublisher(const unsigned char msg[8]) {
   auto message = custom_interfaces::msg::WheelRPM();
   message.header.stamp = this->get_clock()->now();
   message.rl_rpm = rlRPM;
-  RCLCPP_DEBUG(this->get_logger(), "Received RL RPM: %f", rrRPM);
+  RCLCPP_DEBUG(this->get_logger(), "Received RL RPM: %f", rlRPM);
   rlRPMPub->publish(message);
 }
 
-void batteryVoltageCallback(const unsigned char msg[8]) {
+void RosCan::batteryVoltageCallback(const unsigned char msg[8]) {
   this->battery_voltage = (msg[2] << 8) | msg[1];
 }
 
-void motorSpeedPublisher(const unsigned char msg[8]) {
+void RosCan::motorSpeedPublisher(const unsigned char msg[8]) {
   this->motor_speed = (msg[2] << 8) | msg[2];
   // TODO: publish motor speed
 }
