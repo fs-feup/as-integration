@@ -20,6 +20,44 @@ void create_steering_angle_command(float angle, char* buffer) {
     }
 }
 
+/**
+ * @brief Converts the steering angle command from wheels to
+ * actuator position command
+ * 
+ * @param double wheels_steering_angle steering angle in radians at the wheels
+ * @param double actuator_steering_angle steering angle in radians for the actuator
+ * @return int returns 0 if successful, 1 if error
+
+*/
+int transform_steering_angle_command(const double wheels_steering_angle, double &actuator_steering_angle) {
+
+    // WARNING: -------- Código feito pelo António Guedes - PERIGO -------
+
+    // Calculation for beta_1
+    double input_beta_1 = (70 - 71.333 * cos(0.0965167 + wheels_steering_angle))/335.48;
+    if (input_beta_1 < -1 || input_beta_1 > 1) {
+        RCLCPP_ERROR(rclcpp::get_logger("ros_can"), "Error: Input to asin for beta_1 is out of range: %f", input_beta_1);
+        return 1;
+    }
+    double beta_1 = asin(input_beta_1);
+    double delta_x_1 = 71.333 * sin(0.0965167 + wheels_steering_angle) + 335.48 * cos(beta_1) - 349.164;
+
+    // Calculation for beta_2
+    double input_beta_2 = (70 - 71.333 * cos(0.0965167 - wheels_steering_angle))/335.48;
+    if (input_beta_2 < -1 || input_beta_2 > 1) {
+        RCLCPP_ERROR(rclcpp::get_logger("ros_can"), "Error: Input to asin for beta_2 is out of range: %f", input_beta_2);
+        return 1;
+    }
+    double beta_2 = asin(input_beta_2);
+    double delta_x_2 = 71.333 * sin(0.0965167 - wheels_steering_angle) + 335.48 * cos(beta_2) - 349.164;
+
+    double delta_x_average = (delta_x_1 - delta_x_2) / 2;
+    double alpha = delta_x_average * (360 / 87.9);  // Ensure floating point division
+
+    actuator_steering_angle = alpha; // Set angle
+    return 0;
+}
+
 // #define LOG(message, level) \
 //     do { \
 //         rclcpp::Logger logger = rclcpp::get_logger("ros_can"); \

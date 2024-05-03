@@ -20,26 +20,23 @@
 
 RosCan::RosCan() : Node("ros_can") {
   operationalStatus =
-      this->create_publisher<custom_interfaces::msg::OperationalStatus>("/vehicle/operationalStatus", 10);
+      this->create_publisher<custom_interfaces::msg::OperationalStatus>("/vehicle/operational_status", 10);
 
-  rlRPMPub = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rlRPM", 10);
-  rrRPMPub = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rrRPM", 10);
+  rlRPMPub = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rl_rpm", 10);
+  rrRPMPub = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rr_rpm", 10);
 
-  imuYawAccYPub = this->create_publisher<custom_interfaces::msg::ImuData>("/vehicle/imuYawAccY", 10);
-  imuRollAccXPub = this->create_publisher<custom_interfaces::msg::ImuData>("/vehicle/imuRollAccXPub", 10);
-  imuPitchAccZPub = this->create_publisher<custom_interfaces::msg::ImuData>("/vehicle/imuPitchAccZPub", 10);
+  imuYawAccYPub = this->create_publisher<custom_interfaces::msg::ImuData>("/vehicle/imu_yaw_acc_y", 10);
+  imuRollAccXPub = this->create_publisher<custom_interfaces::msg::ImuData>("/vehicle/imu_roll_acc_x", 10);
+  imuPitchAccZPub = this->create_publisher<custom_interfaces::msg::ImuData>("/vehicle/imu_pitch_acc_z", 10);
 
   bosch_steering_angle_publisher =
       this->create_publisher<custom_interfaces::msg::SteeringAngle>("/vehicle/bosch_steering_angle", 10);
-  controlListener = this->create_subscription<fs_msgs::msg::ControlCommand>(
+  controlListener = this->create_subscription<custom_interfaces::msg::ControlCommand>(
       "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
-  emergencyListener = this->create_subscription<std_msgs::msg::String>(
-      "/as_msgs/emergency", 10,
-      std::bind(&RosCan::emergency_callback, this, std::placeholders::_1));  // maybe change type
-  missionFinishedListener = this->create_subscription<fs_msgs::msg::FinishedSignal>(
-      "/as_msgs/mission_finished", 10,
-      std::bind(&RosCan::mission_finished_callback, this,
-                std::placeholders::_1));  // maybe change type
+  emergency_service = this->create_service<std_srvs::srv::Trigger>(
+      "/as_msgs/emergency", std::bind(&RosCan::emergency_callback, this, std::placeholders::_1));
+  mission_finished_service = this->create_service<std_srvs::srv::Trigger>(
+      "/as_msgs/mission_finished", std::bind(&RosCan::mission_finished_callback, this, std::placeholders::_1));
   timer =
       this->create_wall_timer(std::chrono::microseconds(500), std::bind(&RosCan::canSniffer, this));
   timerAliveMsg = this->create_wall_timer(std::chrono::milliseconds(100),
@@ -63,8 +60,7 @@ RosCan::RosCan() : Node("ros_can") {
   if (stat != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to turn on CAN bus");
   }
-
-  // LOG("Node initialized", rclcpp::Logger::Level::Info);
+  RCLCPP_INFO(this->get_logger(), "Node initialized");
 }
 
 
@@ -72,8 +68,14 @@ RosCan::RosCan() : Node("ros_can") {
 // -------------- ROS TO CAN --------------
 
 void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd) {
+  double steering_angle_command = 0.0;
+  if (transform_steering_angle_command(controlCmd->steering, steering_angle_command) != 0) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to transform steering angle command");
+    return;
+  }
+
   // Check if the steering value is within the limits
-  if (controlCmd->steering < STEERING_LOWER_LIMIT || controlCmd->steering > STEERING_UPPER_LIMIT) {
+  if (steering_angle_command < STEERING_LOWER_LIMIT || steering_angle_command > STEERING_UPPER_LIMIT) {
     RCLCPP_WARN(this->get_logger(), "Steering value out of range");
     return;
   }
@@ -86,13 +88,13 @@ void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd
 
   if (currentState == State::AS_Driving) {
     RCLCPP_DEBUG(this->get_logger(), "State is Driving: Steering: %f, Throttle: %f",
-                 controlCmd->steering, controlCmd->throttle);
+                 steering_angle_command, controlCmd->throttle);
     canInitializeLibrary();  // initialize the CAN library again, just in case (could be removed)
 
     // Prepare the steering message
     long id = STEERING_COMMAND_CUBEM_ID;
     char buffer_steering[4];
-    create_steering_angle_command(controlCmd->steering, buffer_steering);
+    create_steering_angle_command(steering_angle_command, buffer_steering);
     void* steering_requestData = static_cast<void*>(buffer_steering);
     unsigned int steering_dlc = 4;
     unsigned int flag = canMSG_EXT; // Steering motor used CAN Extended
@@ -107,7 +109,7 @@ void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd
       RCLCPP_ERROR(this->get_logger(), "Failed to write steering to CAN bus");
     } else {
       RCLCPP_DEBUG(this->get_logger(), "Write steering to CAN bus success: %f", 
-        controlCmd->steering);
+        steering_angle_command);
     }
 
     // Prepare the throttle message
@@ -142,7 +144,11 @@ void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd
   }
 }
 
-void RosCan::emergency_callback(std_msgs::msg::String::SharedPtr msg) {
+void RosCan::emergency_callback(const std::shared_ptr<example_interfaces::srv::ExampleService::Request> request,
+                      std::shared_ptr<example_interfaces::srv::ExampleService::Response> response) {
+  // Handle request
+  response->success = true;
+  
   // Prepare the emergency message
   long id = AS_CU_NODE_ID;            // Set the CAN ID
   unsigned char data = EMERGENCY_CODE;  // Set the data
@@ -158,7 +164,11 @@ void RosCan::emergency_callback(std_msgs::msg::String::SharedPtr msg) {
   }
 }
 
-void RosCan::mission_finished_callback(fs_msgs::msg::FinishedSignal::SharedPtr msg) {
+void RosCan::mission_finished_callback(const std::shared_ptr<example_interfaces::srv::ExampleService::Request> request,
+                      std::shared_ptr<example_interfaces::srv::ExampleService::Response> response) {
+  // Handle request
+  response->success = true;
+
   // Prepare the emergency message
   long id = AS_CU_NODE_ID;            // Set the CAN ID
   unsigned char data = MISSION_FINISHED_CODE;  // Set the data

@@ -10,11 +10,8 @@
 #include "custom_interfaces/msg/operational_status.hpp"
 #include "custom_interfaces/msg/steering_angle.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
-#include "fs_msgs/msg/control_command.hpp"
-#include "fs_msgs/msg/finished_signal.hpp"
+#include "custom_interfaces/msg/control_command.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/msg/imu.hpp"
-#include "std_msgs/msg/string.hpp"
 
 class RosCan : public rclcpp::Node {
  private:
@@ -35,9 +32,9 @@ class RosCan : public rclcpp::Node {
   int hydraulic_line_pressure = 0;
 
   // rclcpp::Subscription<std_msgs::msg::String::SharedPtr> busStatus;
-  rclcpp::Subscription<fs_msgs::msg::ControlCommand>::SharedPtr controlListener;
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr emergencyListener;
-  rclcpp::Subscription<fs_msgs::msg::FinishedSignal>::SharedPtr missionFinishedListener;
+  rclcpp::Subscription<custom_interfaces::msg::ControlCommand>::SharedPtr controlListener;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr emergency_service;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr mission_finished_service;
   rclcpp::TimerBase::SharedPtr timer;
   rclcpp::TimerBase::SharedPtr timerAliveMsg;
 
@@ -177,12 +174,14 @@ class RosCan : public rclcpp::Node {
   /**
    * @brief Function to handle the emergency message
    */
-  void emergency_callback(std_msgs::msg::String::SharedPtr msg);
+  void emergency_callback(const std::shared_ptr<example_interfaces::srv::ExampleService::Request> request,
+                      std::shared_ptr<example_interfaces::srv::ExampleService::Response> response);
 
   /**
    * @brief Function to handle the mission finished message
    */
-  void mission_finished_callback(fs_msgs::msg::FinishedSignal::SharedPtr msg);
+  void mission_finished_callback(const std::shared_ptr<example_interfaces::srv::ExampleService::Request> request,
+                      std::shared_ptr<example_interfaces::srv::ExampleService::Response> response);
 
   /**
    * @brief Function to handle the control command message
