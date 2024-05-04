@@ -29,9 +29,9 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   controlListener = this->create_subscription<custom_interfaces::msg::ControlCommand>(
       "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
   emergency_service = this->create_service<std_srvs::srv::Trigger>(
-      "/as_msgs/emergency", std::bind(&RosCan::emergency_callback, this, std::placeholders::_1, std::placeholders::_2));
+      "/as_srv/emergency", std::bind(&RosCan::emergency_callback, this, std::placeholders::_1, std::placeholders::_2));
   mission_finished_service = this->create_service<std_srvs::srv::Trigger>(
-      "/as_msgs/mission_finished", std::bind(&RosCan::mission_finished_callback, this, std::placeholders::_1, std::placeholders::_2));
+      "/as_srv/mission_finished", std::bind(&RosCan::mission_finished_callback, this, std::placeholders::_1, std::placeholders::_2));
   timer =
           this->create_wall_timer(std::chrono::microseconds(500), std::bind(&RosCan::canSniffer, this));
   timerAliveMsg = this->create_wall_timer(std::chrono::milliseconds(100),
