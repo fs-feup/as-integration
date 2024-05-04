@@ -5,8 +5,9 @@
 #include <memory>
 #include <string>
 #include <std_srvs/srv/trigger.hpp>
+#include <gtest/gtest_prod.h>
 
-#include "../canlib_wrappers/ican_lib_wrapper.hpp"
+#include "canlib_wrappers/ican_lib_wrapper.hpp"
 #include "custom_interfaces/msg/imu.hpp"
 #include "custom_interfaces/msg/imu_data.hpp"
 #include "custom_interfaces/msg/operational_status.hpp"
@@ -34,6 +35,7 @@ class RosCan : public rclcpp::Node {
   int battery_voltage = 0;
   int motor_speed = 0;
   int hydraulic_line_pressure = 0;
+  double steering_angle = 0.0;
 
   std::shared_ptr<ICanLibWrapper> canLibWrapper;
 
@@ -96,8 +98,8 @@ class RosCan : public rclcpp::Node {
    * @param flag - the CAN msg flag - see kvaser documentation for more info
    * @param time - the CAN msg time stamp
    */
-  void canInterpreter(long id, const unsigned char msg[8], unsigned int dlc, unsigned int flag,
-                      unsigned long time);
+  void canInterpreter(long id, const unsigned char msg[8], unsigned int, unsigned int,
+                      unsigned long);
 
   /**
    * @brief Function to publish the Operational Status
@@ -195,6 +197,18 @@ class RosCan : public rclcpp::Node {
   void control_callback(custom_interfaces::msg::ControlCommand::SharedPtr msg);
 
   /**
+   * @brief Function to publish the steering command to CAN
+   * @param double steering value from ROS (in radians)
+  */
+  void send_steering_control(double steering_angle_ros);
+
+  /**
+   * @brief Function to publish the throttle command to CAN
+   * @param double value of the command from ROS
+  */
+  void send_throttle_control(double throttle_value_ros);
+
+  /**
    * @brief Function to send the alive message from the AS CU to Master
   */
   void alive_msg_callback();
@@ -222,17 +236,18 @@ class RosCan : public rclcpp::Node {
   void setASOffState();
 
   /**
-   * @brief Function to handle the control command message
-   */
-  void test_control_callback(custom_interfaces::msg::ControlCommand::SharedPtr msg);
-
-  /**
    * @brief Contructor for the RosCan class
    */
-  RosCan(std::shared_ptr<ICanLibWrapper> canLibWrapperParam);
+  RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param);
 
-  /**
-   * @brief Public can sniffer
-   */
-  void testCanSniffer();
+  FRIEND_TEST(RosCanTest, ControlCallback);
+  FRIEND_TEST(RosCanTest, PublishControlCallback);
+  FRIEND_TEST(RosCanTest, TestImuYawAccYPublisher);
+  FRIEND_TEST(RosCanTest, TestCanInterpreterMasterStatusMission);
+  FRIEND_TEST(RosCanTest, TestCanInterpreter_TEENSY_C1_RR_RPM_CODE);
+  FRIEND_TEST(RosCanTest, TestOutOfRangeUpperSteeringThrottle);
+  FRIEND_TEST(RosCanTest, TestOutOfRangeLowerSteeringThrottle);
+  FRIEND_TEST(RosCanTest, TestOutOfRangeSingleSteeringThrottle);
+  FRIEND_TEST(RosCanTest, TestCarStateMustBeDriving);
+  FRIEND_TEST(RosCanTest, TestAliveMsgCallback);
 };

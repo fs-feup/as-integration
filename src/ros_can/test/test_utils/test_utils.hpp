@@ -1,9 +1,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <fs_msgs/msg/control_command.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <cmath>
+
+#include "custom_interfaces/msg/control_command.hpp"
 
 /**
  * @class RosCanTest
@@ -25,7 +26,7 @@ protected:
         mockCanLibWrapper = std::make_shared<MockCanLibWrapper>();
         rosCan = std::make_shared<RosCan>(mockCanLibWrapper);
 
-        controlCommand = std::make_shared<fs_msgs::msg::ControlCommand>();
+        controlCommand = std::make_shared<custom_interfaces::msg::ControlCommand>();
         controlCommand->throttle = 1.5;
         controlCommand->steering = 1.5;
 
@@ -49,12 +50,12 @@ protected:
     };
 
     std::shared_ptr<rclcpp::Node> test_node_;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr my_string_publisher;
-    rclcpp::Publisher<fs_msgs::msg::FinishedSignal>::SharedPtr my_mission_finished_publisher;
-    rclcpp::Publisher<fs_msgs::msg::ControlCommand>::SharedPtr control_command_publisher;
+    // rclcpp::Publisher<std_msgs::msg::String>::SharedPtr my_string_publisher;
+    // rclcpp::Publisher<fs_msgs::msg::FinishedSignal>::SharedPtr my_mission_finished_publisher;
+    rclcpp::Publisher<custom_interfaces::msg::ControlCommand>::SharedPtr control_command_publisher;
     std::shared_ptr<MockCanLibWrapper> mockCanLibWrapper;
     std::shared_ptr<RosCan> rosCan;
-    std::shared_ptr<fs_msgs::msg::ControlCommand> controlCommand;
+    std::shared_ptr<custom_interfaces::msg::ControlCommand> controlCommand;
 };
 /**
  * @brief Matcher to compare the value pointed by a void pointer to a given unsigned char value.

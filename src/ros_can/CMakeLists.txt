@@ -45,7 +45,7 @@ if(BUILD_TESTING)
 
   # Unit tests
   ament_add_gmock(${PROJECT_NAME}_test ${TESTFILES} ${IMPLEMENTATION_FILES})
-  ament_target_dependencies(${PROJECT_NAME}_test rclcpp std_msgs sensor_msgs fs_msgs custom_interfaces canlib)
+  ament_target_dependencies(${PROJECT_NAME}_test rclcpp std_msgs std_srvs custom_interfaces canlib)
   target_link_libraries(${PROJECT_NAME}_test canlib)
   target_include_directories(${PROJECT_NAME}_test PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

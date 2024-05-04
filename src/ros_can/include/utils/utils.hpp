@@ -25,7 +25,7 @@ void create_steering_angle_command(float angle, char* buffer) {
  * actuator position command
  * 
  * @param double wheels_steering_angle steering angle in radians at the wheels
- * @param double actuator_steering_angle steering angle in radians for the actuator
+ * @param double actuator_steering_angle steering angle in degrees for the actuator
  * @return int returns 0 if successful, 1 if error
 
 */
@@ -52,10 +52,26 @@ int transform_steering_angle_command(const double wheels_steering_angle, double 
     double delta_x_2 = 71.333 * sin(0.0965167 - wheels_steering_angle) + 335.48 * cos(beta_2) - 349.164;
 
     double delta_x_average = (delta_x_1 - delta_x_2) / 2;
-    double alpha = delta_x_average * (360 / 87.9);  // Ensure floating point division
+    double alpha = delta_x_average * (2 * M_PI / 87.9);  // Ensure floating point division
 
     actuator_steering_angle = alpha; // Set angle
     return 0;
 }
+
+// /**
+//  * @brief Converts the steering angle from sensor to wheel angle
+//  * 
+//  * @param double actuator_steering_angle steering angle in degrees for the actuator
+//  * @param double wheels_steering_angle steering angle in radians at the wheels
+//  * @return int returns 0 if successful, 1 if error
+
+// */
+// int transform_steering_angle_reading(const double actuator_steering_angle, double &wheels_steering_angle) {
+
+//     double delta_x_average = actuator_steering_angle / (2 * M_PI / 87.9);
+
+//     // TODO(antónio): função reversa
+//     return 0;
+// }
 
 #endif // STEERING_UTILS_HPP

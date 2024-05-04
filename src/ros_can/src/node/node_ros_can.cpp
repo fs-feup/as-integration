@@ -6,15 +6,14 @@
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
-
 #include "node/node_ros_can.hpp"
 #include "utils/utils.hpp"
 #include "safety/safety-mechanisms.hpp"
 #include "utils/constants.hpp"
 
 
-RosCan::RosCan(std::shared_ptr<ICanLibWrapper> canLibWrapperParam)
-        : Node("node_ros_can"), canLibWrapper(std::move(canLibWrapperParam)) {
+RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
+        : Node("node_ros_can"), canLibWrapper(std::move(can_lib_wrapper_param)) {
   operationalStatus =
       this->create_publisher<custom_interfaces::msg::OperationalStatus>("/vehicle/operational_status", 10);
 
@@ -64,15 +63,9 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> canLibWrapperParam)
 // -------------- ROS TO CAN --------------
 
 void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr controlCmd) {
-  double steering_angle_command = 0.0;
-  if (transform_steering_angle_command(controlCmd->steering, steering_angle_command) != 0) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to transform steering angle command");
-    return;
-  }
-
   // Check if the steering value is within the limits
-  if (steering_angle_command < STEERING_LOWER_LIMIT || steering_angle_command > STEERING_UPPER_LIMIT) {
-    RCLCPP_WARN(this->get_logger(), "Steering value out of range");
+  if (controlCmd->steering < STEERING_LOWER_LIMIT || controlCmd->steering > STEERING_UPPER_LIMIT) {
+    RCLCPP_WARN(this->get_logger(), "Steering value out of range: %lf", controlCmd->steering);
     return;
   }
 
@@ -83,59 +76,74 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
   }
 
   if (currentState == State::AS_Driving) {
-    RCLCPP_DEBUG(this->get_logger(), "State is Driving: Steering: %f, Throttle: %f",
-                 steering_angle_command, controlCmd->throttle);
-    canInitializeLibrary();  // initialize the CAN library again, just in case (could be removed)
+    RCLCPP_INFO(this->get_logger(), "State is Driving: Steering: %f (radians), Throttle: %f",
+                 controlCmd->steering, controlCmd->throttle);
 
-    long id = STEERING_COMMAND_CUBEM_ID;
-    char buffer_steering[4];
-    create_steering_angle_command(steering_angle_command, buffer_steering);
-    void* steering_requestData = static_cast<void*>(buffer_steering);
-    unsigned int steering_dlc = 4;
-    unsigned int flag = canMSG_EXT; // Steering motor used CAN Extended
+    send_steering_control(controlCmd->steering);
+    send_throttle_control(controlCmd->throttle);
+  }
+}
 
-    // Write the steering message to the CAN bus
-    // DO NOT EVER EDIT THIS CODE BLOCK
-    // CODE BLOCK START
-    check_steering_safe(steering_requestData); // DO NOT REMOVE EVER
-    stat = canLibWrapper->canWrite(hnd, id, steering_requestData, steering_dlc, flag);
-    // CODE BLOCK END
-    if (stat != canOK) {
-      RCLCPP_ERROR(this->get_logger(), "Failed to write steering to CAN bus");
-    } else {
-      RCLCPP_DEBUG(this->get_logger(), "Write steering to CAN bus success: %f", 
-        steering_angle_command);
-    }
+void RosCan::send_steering_control(double steering_angle_ros) {
 
-    // Prepare the throttle message
-    int throttle_command = static_cast<int>(controlCmd->throttle * BAMOCAR_MAX_SCALE);
-    
-    // CRITICAL CHECK - DO NOT REMOVE
-    // Limit brake command if needed
-    if (throttle_command < 0) {
-      throttle_command = std::max(throttle_command, 
-        max_torque_dynamic_limits(this->battery_voltage, this->motor_speed));
-    }
+  // Convert to steering in actuator
+  double steering_angle_command = 0.0;
+  if (transform_steering_angle_command(steering_angle_ros, steering_angle_command) != 0) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to transform steering angle command");
+    return;
+  }
 
-    long throttle_id = BAMO_COMMAND_ID;
-    unsigned char buffer_throttle[3];
-    buffer_throttle[0] = TORQUE_COMMAND_BAMO_BYTE;
-    buffer_throttle[2] = (throttle_command >> 8) & 0xff;
-    buffer_throttle[1] = throttle_command & 0xff;
-    void* throttle_requestData = static_cast<void*>(buffer_throttle);
-    unsigned int throttle_dlc = 3;
+  long id = STEERING_COMMAND_CUBEM_ID;
+  char buffer_steering[4];
+  create_steering_angle_command(steering_angle_command, buffer_steering);
+  void* steering_requestData = static_cast<void*>(buffer_steering);
+  unsigned int steering_dlc = 4;
+  unsigned int flag = canMSG_EXT; // Steering motor used CAN Extended
 
-    // Write the throttle message to the CAN bus
-    // DO NOT EVER EDIT THIS CODE BLOCK
-    // CODE BLOCK START
-    check_throttle_safe(throttle_requestData); // DO NOT REMOVE EVER
-    stat = canLibWrapper->canWrite(hnd, throttle_id, throttle_requestData, throttle_dlc, flag);
-    // CODE BLOCK END
-    if (stat != canOK) {
-      RCLCPP_ERROR(this->get_logger(), "Failed to write throttle to CAN bus");
-    } else {
-      RCLCPP_DEBUG(this->get_logger(), "Write throttle to CAN bus success: %f", controlCmd->throttle);
-    }
+  // Write the steering message to the CAN bus
+  // DO NOT EVER EDIT THIS CODE BLOCK
+  // CODE BLOCK START
+  check_steering_safe(steering_requestData); // DO NOT REMOVE EVER
+  stat = canLibWrapper->canWrite(hnd, id, steering_requestData, steering_dlc, flag);
+  // CODE BLOCK END
+  if (stat != canOK) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to write steering to CAN bus");
+  } else {
+    RCLCPP_DEBUG(this->get_logger(), "Write steering to CAN bus success: %f (degrees)", 
+      steering_angle_command);
+  }
+}
+
+void RosCan::send_throttle_control(double throttle_value_ros) {
+  // Prepare the throttle message
+  int throttle_command = static_cast<int>(throttle_value_ros * BAMOCAR_MAX_SCALE);
+  
+  // CRITICAL CHECK - DO NOT REMOVE
+  // Limit brake command if needed
+  if (throttle_command < 0) {
+    throttle_command = std::max(throttle_command, 
+      max_torque_dynamic_limits(this->battery_voltage, this->motor_speed));
+  }
+
+  long throttle_id = BAMO_COMMAND_ID;
+  unsigned char buffer_throttle[3];
+  buffer_throttle[0] = TORQUE_COMMAND_BAMO_BYTE;
+  buffer_throttle[2] = (throttle_command >> 8) & 0xff;
+  buffer_throttle[1] = throttle_command & 0xff;
+  void* throttle_requestData = static_cast<void*>(buffer_throttle);
+  unsigned int throttle_dlc = 3;
+  unsigned int flag = 0;
+
+  // Write the throttle message to the CAN bus
+  // DO NOT EVER EDIT THIS CODE BLOCK
+  // CODE BLOCK START
+  check_throttle_safe(throttle_requestData); // DO NOT REMOVE EVER
+  stat = canLibWrapper->canWrite(hnd, throttle_id, throttle_requestData, throttle_dlc, flag);
+  // CODE BLOCK END
+  if (stat != canOK) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to write throttle to CAN bus");
+  } else {
+    RCLCPP_DEBUG(this->get_logger(), "Write throttle to CAN bus success: %f", throttle_value_ros);
   }
 }
 
@@ -152,7 +160,7 @@ void RosCan::emergency_callback(const std::shared_ptr<std_srvs::srv::Trigger::Re
   unsigned int flag = 0;
   RCLCPP_INFO(this->get_logger(), "Emergency signal received, sending to CAN");
 
-  stat = canLibWrapper->canWrite(hnd, can_id, requestData, dlc, flag);
+  stat = canLibWrapper->canWrite(hnd, id, requestData, dlc, flag);
   if (stat != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
   }
@@ -171,21 +179,21 @@ void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trig
   unsigned int flag = 0;
   RCLCPP_INFO(this->get_logger(), "Mission finished signal received, sending to CAN");
 
-  stat = canLibWrapper->canWrite(hnd, can_id, requestData, dlc, flag);
+  stat = canLibWrapper->canWrite(hnd, id, requestData, dlc, flag);
   if (stat != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
   }
 }
 
 void RosCan::alive_msg_callback() {
-  long can_id = AS_CU_NODE_ID;
+  long id = AS_CU_NODE_ID;
   unsigned char data = ALIVE_MESSAGE;
   void *msg = &data;
   unsigned int dlc = 1;
   unsigned int flag = 0;
   RCLCPP_DEBUG(this->get_logger(), "Sending alive message to AS_CU_NODE");
 
-  stat = canLibWrapper->canWrite(hnd, can_id, msg, dlc, flag);
+  stat = canLibWrapper->canWrite(hnd, id, msg, dlc, flag);
   if (stat != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to write alive message to CAN bus");
   }
@@ -263,15 +271,15 @@ void RosCan::canSniffer() {
   unsigned int flag;
   unsigned long time;
 
-  do {
-    stat = canLibWrapper->canRead(hnd, &id, &msg, &dlc, &flag, &time);
+  stat = canLibWrapper->canRead(hnd, &id, &msg, &dlc, &flag, &time);
+  while (stat == canOK) {
     canInterpreter(id, msg, dlc, flag, time);
-    RCLCPP_DEBUG(this->get_logger(), "Received message with ID: %x", id); // Intended
-  } while (stat == canOK);
+    stat = canLibWrapper->canRead(hnd, &id, &msg, &dlc, &flag, &time);
+  }
 }
 
-void RosCan::canInterpreter(long id, const unsigned char msg[8], unsigned int dlc, unsigned int flag,
-                            unsigned long time) {
+void RosCan::canInterpreter(long id, const unsigned char msg[8], unsigned int, unsigned int,
+                            unsigned long) {
   switch (id) {
     case MASTER_STATUS: {
       canInterpreterMasterStatus(msg);
@@ -302,7 +310,7 @@ void RosCan::canInterpreter(long id, const unsigned char msg[8], unsigned int dl
       break;
     }
     case BAMO_RESPONSE_ID: {
-      // batteryVoltageCallback(msg);
+      canInterpreterBamocar(msg);
       break;
     }
     default:
@@ -328,10 +336,15 @@ void RosCan::canInterpreterBamocar(const unsigned char msg[8]) {
 void RosCan::canInterpreterMasterStatus(const unsigned char msg[8]) {
   switch (msg[0]) {
     case MASTER_AS_STATE_CODE: {
-      if (msg[1] == 3)  // If AS State == Driving
+      if (msg[1] == 3) {  // If AS State == Driving
+        // Fix initial actuator angle
+        if (this->goSignal == 0) {
+          this->send_steering_control(-this->steering_angle);
+        }
         this->goSignal = 1;
-      else
+      } else {
         this->goSignal = 0;
+      }
       opStatusPublisher();
       break;
     }
@@ -424,7 +437,7 @@ void RosCan::steeringAngleBoschPublisher(const unsigned char msg[8]) {
 
   // Error flags
   if (first_three_bits != mask) {
-    RCLCPP_ERROR(this->get_logger(), "Invalid message received from Bosch Steering Wheel Sensor");
+    RCLCPP_WARN(this->get_logger(), "Invalid message received from Bosch Steering Wheel Sensor: %x", first_three_bits);
     return;
   }
 
@@ -443,12 +456,17 @@ void RosCan::steeringAngleBoschPublisher(const unsigned char msg[8]) {
   short speed_value = msg[3] << 7 | (msg[4] >> 1);
   float speed = negative ? -(speed_value / 10.0) : speed_value / 10.0;
 
+  RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (degrees): %f", angle);
+  speed = speed * M_PI / 180;
+  angle = angle * M_PI / 180;
+  this->steering_angle = angle; // Used for initial adjustment
+
   // Send message
   auto message = custom_interfaces::msg::SteeringAngle();
   message.header.stamp = this->get_clock()->now();
   message.steering_angle = angle;
   message.steering_speed = speed;
-  RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle: %f", angle);
+  RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (radians): %f", angle);
   bosch_steering_angle_publisher->publish(message);
 }
 
@@ -470,13 +488,6 @@ void RosCan::rlRPMPublisher(const unsigned char msg[8]) {
   rlRPMPub->publish(message);
 }
 
-/**
- * @brief public function to test the control_callback
- * @param msg - the controls from ROS(control) msg
- */
-void RosCan::test_control_callback(custom_interfaces::msg::ControlCommand::SharedPtr msg) {
-  control_callback(msg);
-}
 
 /**
  * @brief public function that sets the currentState to AS_Driving, helpful for testing
@@ -488,17 +499,11 @@ void RosCan::setASDrivingState() { currentState = State::AS_Driving; }
  */
 void RosCan::setASOffState() { currentState = State::AS_Off; }
 
-/**
- * @brief public function to test the canSniffer
- */
-void RosCan::testCanSniffer() {
-  canSniffer();
-}
 void RosCan::batteryVoltageCallback(const unsigned char msg[8]) {
   this->battery_voltage = (msg[2] << 8) | msg[1];
 }
 
 void RosCan::motorSpeedPublisher(const unsigned char msg[8]) {
-  this->motor_speed = (msg[2] << 8) | msg[2];
+  this->motor_speed = (msg[2] << 8) | msg[1];
   // TODO: publish motor speed
 }

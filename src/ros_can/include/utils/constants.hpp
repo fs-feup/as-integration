@@ -204,8 +204,8 @@
 #define BAMOCAR_MAX_VOLTAGE 600
 #define BAMOCAR_MAX_SCALE 32767 // Max of the messages from the bamocar
 
-#define STEERING_UPPER_LIMIT 110 // Input Limits
-#define STEERING_LOWER_LIMIT -110 // Input Limits
+#define STEERING_UPPER_LIMIT 0.392699 // Input Limits
+#define STEERING_LOWER_LIMIT -0.392699 // Input Limits
 #define STEERING_UPPER_LIMIT_HEX_CHAR 0x11 // Limit for buffer[1] value
 #define STEERING_LOWER_LIMIT_HEX_CHAR 0xee // Limit for buffer[1] value
 
