@@ -25,7 +25,7 @@ void create_steering_angle_command(float angle, char* buffer) {
  * actuator position command
  * 
  * @param double wheels_steering_angle steering angle in radians at the wheels
- * @param double actuator_steering_angle steering angle in degrees for the actuator
+ * @param double actuator_steering_angle steering angle in radians for the actuator
  * @return int returns 0 if successful, 1 if error
 
 */
