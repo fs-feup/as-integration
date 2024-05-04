@@ -4,13 +4,8 @@
 #include <functional>
 #include <memory>
 #include <string>
-// #include <bitset>
-// #include <unistd.h>
 
 #include "rclcpp/rclcpp.hpp"
-#include "fs_msgs/msg/control_command.hpp"
-#include "std_msgs/msg/string.hpp"
-#include "std_msgs/msg/header.hpp"
 
 #include "node/node_ros_can.hpp"
 #include "utils/utils.hpp"
@@ -34,9 +29,9 @@ RosCan::RosCan() : Node("ros_can") {
   controlListener = this->create_subscription<custom_interfaces::msg::ControlCommand>(
       "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
   emergency_service = this->create_service<std_srvs::srv::Trigger>(
-      "/as_msgs/emergency", std::bind(&RosCan::emergency_callback, this, std::placeholders::_1));
+      "/as_msgs/emergency", std::bind(&RosCan::emergency_callback, this, std::placeholders::_1, std::placeholders::_2));
   mission_finished_service = this->create_service<std_srvs::srv::Trigger>(
-      "/as_msgs/mission_finished", std::bind(&RosCan::mission_finished_callback, this, std::placeholders::_1));
+      "/as_msgs/mission_finished", std::bind(&RosCan::mission_finished_callback, this, std::placeholders::_1, std::placeholders::_2));
   timer =
       this->create_wall_timer(std::chrono::microseconds(500), std::bind(&RosCan::canSniffer, this));
   timerAliveMsg = this->create_wall_timer(std::chrono::milliseconds(100),
@@ -67,7 +62,7 @@ RosCan::RosCan() : Node("ros_can") {
 
 // -------------- ROS TO CAN --------------
 
-void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd) {
+void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr controlCmd) {
   double steering_angle_command = 0.0;
   if (transform_steering_angle_command(controlCmd->steering, steering_angle_command) != 0) {
     RCLCPP_ERROR(this->get_logger(), "Failed to transform steering angle command");
@@ -144,8 +139,8 @@ void RosCan::control_callback(fs_msgs::msg::ControlCommand::SharedPtr controlCmd
   }
 }
 
-void RosCan::emergency_callback(const std::shared_ptr<example_interfaces::srv::ExampleService::Request> request,
-                      std::shared_ptr<example_interfaces::srv::ExampleService::Response> response) {
+void RosCan::emergency_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+                      std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
   // Handle request
   response->success = true;
   
@@ -164,8 +159,8 @@ void RosCan::emergency_callback(const std::shared_ptr<example_interfaces::srv::E
   }
 }
 
-void RosCan::mission_finished_callback(const std::shared_ptr<example_interfaces::srv::ExampleService::Request> request,
-                      std::shared_ptr<example_interfaces::srv::ExampleService::Response> response) {
+void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+                      std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
   // Handle request
   response->success = true;
 
@@ -416,7 +411,7 @@ void RosCan::steeringAngleCubeMPublisher(const unsigned char msg[8]) {
   message.header.stamp = this->get_clock()->now();
   message.steering_angle = static_cast<double>(angle) / 1000000;
   message.steering_speed = static_cast<double>(speed);
-  RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %d", message.steering_angle);
+  RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %f", message.steering_angle);
   // bosch_steering_angle_publisher->publish(message); // wrong publisher
 }
 

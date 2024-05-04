@@ -4,6 +4,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <std_srvs/srv/trigger.hpp>
 
 #include "custom_interfaces/msg/imu.hpp"
 #include "custom_interfaces/msg/imu_data.hpp"
@@ -174,19 +175,19 @@ class RosCan : public rclcpp::Node {
   /**
    * @brief Function to handle the emergency message
    */
-  void emergency_callback(const std::shared_ptr<example_interfaces::srv::ExampleService::Request> request,
-                      std::shared_ptr<example_interfaces::srv::ExampleService::Response> response);
+  void emergency_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+                      std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
   /**
    * @brief Function to handle the mission finished message
    */
-  void mission_finished_callback(const std::shared_ptr<example_interfaces::srv::ExampleService::Request> request,
-                      std::shared_ptr<example_interfaces::srv::ExampleService::Response> response);
+  void mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+                      std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
   /**
    * @brief Function to handle the control command message
    */
-  void control_callback(fs_msgs::msg::ControlCommand::SharedPtr msg);
+  void control_callback(custom_interfaces::msg::ControlCommand::SharedPtr msg);
 
   /**
    * @brief Function to send the alive message from the AS CU to Master

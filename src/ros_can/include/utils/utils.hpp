@@ -31,7 +31,7 @@ void create_steering_angle_command(float angle, char* buffer) {
 */
 int transform_steering_angle_command(const double wheels_steering_angle, double &actuator_steering_angle) {
 
-    // WARNING: -------- Código feito pelo António Guedes - PERIGO -------
+    // WARNING: -------- Código feito pelo António Guedes - PERIGO --------
 
     // Calculation for beta_1
     double input_beta_1 = (70 - 71.333 * cos(0.0965167 + wheels_steering_angle))/335.48;
@@ -43,7 +43,7 @@ int transform_steering_angle_command(const double wheels_steering_angle, double 
     double delta_x_1 = 71.333 * sin(0.0965167 + wheels_steering_angle) + 335.48 * cos(beta_1) - 349.164;
 
     // Calculation for beta_2
-    double input_beta_2 = (70 - 71.333 * cos(0.0965167 - wheels_steering_angle))/335.48;
+    double input_beta_2 = (70 - 71.333 * cos(0.0965167 - wheels_steering_angle)) / 335.48;
     if (input_beta_2 < -1 || input_beta_2 > 1) {
         RCLCPP_ERROR(rclcpp::get_logger("ros_can"), "Error: Input to asin for beta_2 is out of range: %f", input_beta_2);
         return 1;
@@ -57,12 +57,5 @@ int transform_steering_angle_command(const double wheels_steering_angle, double 
     actuator_steering_angle = alpha; // Set angle
     return 0;
 }
-
-// #define LOG(message, level) \
-//     do { \
-//         rclcpp::Logger logger = rclcpp::get_logger("ros_can"); \
-//         std::string complete_message = __FUNCTION__ + ":" + message; \
-//         logger.log(level, complete_message); \
-//     } while(0)
 
 #endif // STEERING_UTILS_HPP
