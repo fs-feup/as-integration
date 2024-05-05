@@ -28,7 +28,7 @@ protected:
         rosCan = std::make_shared<RosCan>(mockCanLibWrapper);
 
         controlCommand = std::make_shared<custom_interfaces::msg::ControlCommand>();
-        controlCommand->throttle = 0.01;
+        controlCommand->throttle = 0;
         controlCommand->steering = 0.1;
 
         rosCan->setASDrivingState();
