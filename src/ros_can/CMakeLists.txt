@@ -18,6 +18,7 @@ find_package(std_srvs REQUIRED)
 
 set(IMPLEMENTATION_FILES 
   src/node/node_ros_can.cpp
+  src/utils/utils.cpp
 )
 
 add_executable(${PROJECT_NAME} src/main.cpp ${IMPLEMENTATION_FILES})

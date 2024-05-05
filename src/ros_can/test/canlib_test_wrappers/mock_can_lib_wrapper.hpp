@@ -1,3 +1,4 @@
+#pragma once
 #include <gmock/gmock.h>
 #include "../../include/canlib_wrappers/ican_lib_wrapper.hpp"
 

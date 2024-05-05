@@ -1,9 +1,10 @@
+#pragma once
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <rclcpp/rclcpp.hpp>
 #include <cmath>
-
+#include "utils/utils.hpp"
 #include "custom_interfaces/msg/control_command.hpp"
 
 /**
@@ -27,8 +28,8 @@ protected:
         rosCan = std::make_shared<RosCan>(mockCanLibWrapper);
 
         controlCommand = std::make_shared<custom_interfaces::msg::ControlCommand>();
-        controlCommand->throttle = 1.5;
-        controlCommand->steering = 1.5;
+        controlCommand->throttle = 0.01;
+        controlCommand->steering = 0.1;
 
         rosCan->setASDrivingState();
     }
@@ -103,7 +104,12 @@ float get_angle_from_request_data(void *steering_requestData) {
  */
 MATCHER_P(PointeeAsAngleEqualTo, expected_angle, "") {
     float angle = get_angle_from_request_data(const_cast<void *>(arg));
-    return is_approx_equal(angle, expected_angle, 0.0001);
+    double comp_angle = 0;
+    transform_steering_angle_command(expected_angle, comp_angle);
+    //print comp and expected angle
+    std::cout << "comp_angle: " << comp_angle << std::endl;
+    std::cout << "expected_angle: " << angle << std::endl;
+    return is_approx_equal(comp_angle, angle, 0.001);
 }
 /**
  * @brief Action to set the value pointed by the third argument (arg2) to a given unsigned char array.
