@@ -1,15 +1,26 @@
 #pragma once
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <rclcpp/rclcpp.hpp>
 #include <cmath>
 #include "utils/utils.hpp"
+#include "utils/constants.hpp"
 #include "custom_interfaces/msg/control_command.hpp"
+
+
+/**
+ * @brief Matcher to compare the value pointed by a void pointer to a given unsigned char value.
+ * @param value The expected unsigned char value.
+ */
+MATCHER_P(PointeeAsChar, value, "") {
+    return *(static_cast<unsigned char *>(arg)) == value;
+}
 
 /**
  * @class RosCanTest
- * @brief A test fixture for testing the RosCan class. Initializes the roscan and test node, a wrapper for the mock canlib and an example of a controlCommand.
+ * @brief A test fixture for testing the RosCan class. Initializes the roscan and test node, a wrapper for the mock canlib and an example of a control_command_.
  */
 class RosCanTest : public ::testing::Test {
 protected:
@@ -24,15 +35,16 @@ protected:
 
         test_node_ = std::make_shared<rclcpp::Node>("test_node");
 
-        mockCanLibWrapper = std::make_shared<MockCanLibWrapper>();
-        rosCan = std::make_shared<RosCan>(mockCanLibWrapper);
+        mock_can_lib_wrapper_ = std::make_shared<MockCanLibWrapper>();
+        ros_can_ = std::make_shared<RosCan>(mock_can_lib_wrapper_);
 
-        controlCommand = std::make_shared<custom_interfaces::msg::ControlCommand>();
-        controlCommand->throttle = 0;
-        controlCommand->steering = 0.1;
+        control_command_ = std::make_shared<custom_interfaces::msg::ControlCommand>();
+        control_command_->throttle = 0;
+        control_command_->steering = 0.1;
 
-        rosCan->setASDrivingState();
+        ros_can_->setASDrivingState();
     }
+
     /**
      * @brief Tear down the test fixture.
      * This function is called after each test is run.
@@ -43,28 +55,63 @@ protected:
         }
     }
 
-    std::map<std::string, std::string> topics = {{"emergency",        "/as_msgs/emergency"},
-                                                 {"mission_finished", "/as_msgs/mission_finished"},
-                                                 {"controls",         "/as_msgs/controls"},
-                                                 {"status",           "operationalStatus"},
-                                                 {"right_rear",       "rrRPM"}
+    void prepareOutOfRangeValues(float throttle, float steering, int expectedCalls) {
+        control_command_->throttle = throttle;
+        control_command_->steering = steering;
+        long steering_id = STEERING_COMMAND_CUBEM_ID;
+        EXPECT_CALL(*mock_can_lib_wrapper_,
+                    canWrite(testing::_, steering_id, testing::_, testing::_, testing::_))
+                .Times(expectedCalls);
+
+        long throttle_id = BAMO_COMMAND_ID;
+        EXPECT_CALL(*mock_can_lib_wrapper_,
+                    canWrite(testing::_, throttle_id, testing::_, testing::_, testing::_))
+                .Times(expectedCalls);
+    }
+
+    void testServiceCall(const std::string &service_name, unsigned char expectedData) {
+        // Create a client for the service
+        auto client = test_node_->create_client<std_srvs::srv::Trigger>(service_name);
+
+        // Wait for the service to be available
+        ASSERT_TRUE(client->wait_for_service(std::chrono::seconds(1)));
+
+        // Create a request for the service
+        auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+
+        long can_id = AS_CU_NODE_ID;
+
+        EXPECT_CALL(*mock_can_lib_wrapper_,
+                    canRead(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_))
+                .WillRepeatedly(testing::Return(canERR_NOMSG));
+        EXPECT_CALL(*mock_can_lib_wrapper_,
+                    canWrite(testing::_, can_id, PointeeAsChar(expectedData), testing::_, testing::_))
+                .Times(1)
+                .WillOnce(testing::Return(canOK));
+
+        // Call the service
+        auto future = client->async_send_request(request);
+
+        // Spin the node for the service call to proceed
+        rclcpp::spin_some(ros_can_);
+    }
+
+    std::map<std::string, std::string> topics_ = {{"emergency",        "/as_msgs/emergency"},
+                                                  {"mission_finished", "/as_msgs/mission_finished"},
+                                                  {"controls",         "/as_msgs/controls"},
+                                                  {"status",           "operational_status_"},
+                                                  {"right_rear",       "rrRPM"}
     };
 
     std::shared_ptr<rclcpp::Node> test_node_;
-    // rclcpp::Publisher<std_msgs::msg::String>::SharedPtr my_string_publisher;
-    // rclcpp::Publisher<fs_msgs::msg::FinishedSignal>::SharedPtr my_mission_finished_publisher;
-    rclcpp::Publisher<custom_interfaces::msg::ControlCommand>::SharedPtr control_command_publisher;
-    std::shared_ptr<MockCanLibWrapper> mockCanLibWrapper;
-    std::shared_ptr<RosCan> rosCan;
-    std::shared_ptr<custom_interfaces::msg::ControlCommand> controlCommand;
+    rclcpp::Publisher<custom_interfaces::msg::ControlCommand>::SharedPtr control_command_publisher_;
+    std::shared_ptr<MockCanLibWrapper> mock_can_lib_wrapper_;
+    std::shared_ptr<RosCan> ros_can_;
+    std::shared_ptr<custom_interfaces::msg::ControlCommand> control_command_;
 };
-/**
- * @brief Matcher to compare the value pointed by a void pointer to a given unsigned char value.
- * @param value The expected unsigned char value.
- */
-MATCHER_P(PointeeAsChar, value, "") {
-    return *(static_cast<unsigned char *>(arg)) == value;
-}
+
+
+
 /**
  * @brief Matcher to compare the value pointed by a void pointer to a given double value.
  * @param value The expected double value.
@@ -72,6 +119,7 @@ MATCHER_P(PointeeAsChar, value, "") {
 MATCHER_P(PointeeAsDouble, value, "") {
     return *(static_cast<double *>(arg)) == value;
 }
+
 /**
      * @brief Check if two doubles are approximately equal.
      * @param a The first double.
@@ -79,22 +127,23 @@ MATCHER_P(PointeeAsDouble, value, "") {
      * @param tolerance The tolerance for the comparison.
      * @return True if the doubles are approximately equal, false otherwise.
      */
-bool is_approx_equal(double a, double b, double tolerance) {
+bool isApproxEqual(double a, double b, double tolerance) {
     return fabs(a - b) <= tolerance;
 }
+
 /**
      * @brief Get the angle from void* passed to the function.
      * @param steering_requestData The request data void*.
      * @return The angle.
      */
-float get_angle_from_request_data(void *steering_requestData) {
+float getAngleFromRequestData(void *steering_requestData) {
     char *buffer = static_cast<char *>(steering_requestData);
     int converted_angle = 0;
     for (int i = 0; i < 4; i++) {
         converted_angle |= (static_cast<unsigned char>(buffer[i]) << (8 * (3 - i)));
     }
     float degree_angle = static_cast<float>(converted_angle) / 10000;
-    float angle = degree_angle * M_PI / 180;
+    float angle = static_cast<float>(degree_angle * M_PI / 180);
     return angle;
 }
 
@@ -103,14 +152,23 @@ float get_angle_from_request_data(void *steering_requestData) {
  * @param expected_angle The expected angle in radians.
  */
 MATCHER_P(PointeeAsAngleEqualTo, expected_angle, "") {
-    float angle = get_angle_from_request_data(const_cast<void *>(arg));
+    float angle = getAngleFromRequestData(const_cast<void *>(arg));
     double comp_angle = 0;
     transform_steering_angle_command(expected_angle, comp_angle);
-    //print comp and expected angle
-    std::cout << "comp_angle: " << comp_angle << std::endl;
-    std::cout << "expected_angle: " << angle << std::endl;
-    return is_approx_equal(comp_angle, angle, 0.001);
+    return isApproxEqual(comp_angle, angle, 0.001);
 }
+
+/**
+ * @brief Matcher to compare the value pointed by a void pointer to a given unsigned char value.
+ * @param expected_throttle_value_ros The expected throttle value in ROS.
+ */
+MATCHER_P(PointeeAsThrottleValueEqualTo, expected_throttle_value_ros, "") {
+    auto *buffer_throttle = static_cast<unsigned char *>(const_cast<void *>(arg));
+    int throttle_command = (buffer_throttle[2] << 8) | buffer_throttle[1];
+    double actual_throttle_value_ros = static_cast<double>(throttle_command) / BAMOCAR_MAX_SCALE;
+    return isApproxEqual(actual_throttle_value_ros, expected_throttle_value_ros, 0.001);
+}
+
 /**
  * @brief Action to set the value pointed by the third argument (arg2) to a given unsigned char array.
  * @param value The unsigned char array to be copied.

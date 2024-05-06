@@ -183,11 +183,6 @@
 // -------------- SAFETY CONSTANTS --------------
 
 // TODO: these values can be obtained through CAN communication
-#define BAMOCAR_MAX_RPM 6500
-#define BAMOCAR_MAX_CURRENT 1000
-#define BAMOCAR_MAX_VOLTAGE 600
-#define BAMOCAR_MAX_SCALE 32767 // Max of the messages from the bamocar
-
 /**
  * Checksum for steering angle sensor
 */

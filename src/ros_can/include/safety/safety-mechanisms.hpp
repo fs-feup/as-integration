@@ -42,9 +42,9 @@ void check_throttle_safe(void* throttle_payload_data) {
 
     // DO NOT REMOVE NEXT BLOCK
     unsigned char byte1 = static_cast<unsigned char>
-        ((static_cast<char*>(throttle_payload_data))[1]);
+        ((static_cast<char*>(throttle_payload_data))[2]);
     unsigned char byte0 = static_cast<unsigned char>
-        ((static_cast<char*>(throttle_payload_data))[0]);
+        ((static_cast<char*>(throttle_payload_data))[1]);
     int val = ((byte1 << 8) | (byte0 & 0xff));
     // HARD THROTTLE UPPER LIMIT
     assert(val <= BAMOCAR_MAX_SCALE);
