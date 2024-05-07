@@ -14,9 +14,9 @@
  * @return 0 on successful completion.
  */
 int main(int argc, char *argv[]) {
-    rclcpp::init(argc, argv);
-    auto canLibWrapper = std::make_shared<CanLibWrapper>();
-    rclcpp::spin(std::make_shared<RosCan>(canLibWrapper));
-    rclcpp::shutdown();
-    return 0;
+  rclcpp::init(argc, argv);
+  auto canLibWrapper = std::make_shared<CanLibWrapper>();
+  rclcpp::spin(std::make_shared<RosCan>(canLibWrapper));
+  rclcpp::shutdown();
+  return 0;
 }

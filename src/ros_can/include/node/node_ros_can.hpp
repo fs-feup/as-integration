@@ -1,26 +1,24 @@
 #include <canlib.h>
+#include <gtest/gtest_prod.h>
 
 #include <chrono>
 #include <functional>
 #include <memory>
-#include <string>
 #include <std_srvs/srv/trigger.hpp>
-#include <gtest/gtest_prod.h>
+#include <string>
 
 #include "canlib_wrappers/ican_lib_wrapper.hpp"
+#include "custom_interfaces/msg/control_command.hpp"
 #include "custom_interfaces/msg/imu.hpp"
 #include "custom_interfaces/msg/imu_data.hpp"
 #include "custom_interfaces/msg/operational_status.hpp"
 #include "custom_interfaces/msg/steering_angle.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
-#include "custom_interfaces/msg/control_command.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 class RosCan : public rclcpp::Node {
- private:
-  enum class State {
-      AS_MANUAL, AS_OFF, AS_READY, AS_DRIVING, AS_FINISHED, AS_EMERGENCY
-  };
+private:
+  enum class State { AS_MANUAL, AS_OFF, AS_READY, AS_DRIVING, AS_FINISHED, AS_EMERGENCY };
   rclcpp::Publisher<custom_interfaces::msg::OperationalStatus>::SharedPtr operational_status_;
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rl_rpm_pub_;
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rr_rpm_pub_;
@@ -28,7 +26,8 @@ class RosCan : public rclcpp::Node {
   rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imu_roll_acc_x_pub_;
   rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imu_pitch_acc_z_pub_;
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr steering_angle_bosch_;
-  rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr bosch_steering_angle_publisher_;
+  rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
+      bosch_steering_angle_publisher_;
 
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF;
@@ -70,12 +69,12 @@ class RosCan : public rclcpp::Node {
 
   /**
    * Cubemars set origin sent
-  */
+   */
   bool cubem_configuration_sent_ = false;
 
   /**
    * Steering angle from cubemars
-  */
+   */
   double cubem_steering_angle_ = 0.0;
 
   /**
@@ -83,12 +82,12 @@ class RosCan : public rclcpp::Node {
    * @param busStatus - the status of the bus
    *
    *void busStatus_callback(std_msgs::msg::String busStatus);
-  */
+   */
 
   /**
    * @brief Function cyclically reads all CAN msg from buffer
    */
-  void canSniffer();
+  void can_sniffer();
 
   /**
    * @brief Function to interpret the CAN msg
@@ -98,142 +97,142 @@ class RosCan : public rclcpp::Node {
    * @param flag - the CAN msg flag - see kvaser documentation for more info
    * @param time - the CAN msg time stamp
    */
-  void canInterpreter(long id, const unsigned char msg[8], unsigned int, unsigned int,
-                      unsigned long);
+  void can_interpreter(long id, const unsigned char msg[8], unsigned int, unsigned int,
+                       unsigned long);
 
   /**
    * @brief Function to publish the Operational Status
    */
-  void opStatusPublisher();
+  void op_status_publisher();
 
   /**
    * @brief Function to publish the Yaw rate and Acceleration in Y
    * @param msg - the CAN msg
    */
-  void imuYawAccYPublisher(const unsigned char msg[8]);
+  void imu_yaw_acc_y_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Function to publish the Roll rate and Acceleration in X
    * @param msg - the CAN msg
    */
-  void imuRollAccXPublisher(const unsigned char msg[8]);
+  void imu_roll_acc_x_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Function to publish the Pitch rate and Acceleration in Z
    * @param msg - the CAN msg
    */
-  void imuPitchAccZPublisher(const unsigned char msg[8]);
+  void imu_pitch_acc_z_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Function to publish the steering angle form steering actuator (CubeMars)
    * @param msg - the CAN msg
    */
-  void steeringAngleCubeMPublisher(const unsigned char msg[8]);
+  void steering_angle_cubem_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Function to publish the steering angle form Bosch
    * @param msg - the CAN msg
    */
-  void steeringAngleBoschPublisher(const unsigned char msg[8]);
+  void steering_angle_bosch_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Function to publish the rear right rpm
    * @param msg - the CAN msg
    */
-  void rrRPMPublisher(const unsigned char msg[8]);
+  void rr_rpm_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Function to publish the rear left rpm
    * @param msg - the CAN msg
    */
-  void rlRPMPublisher(const unsigned char msg[8]);
+  void rl_rpm_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Function to receive hydraulic line pressure
    * Used to check if you can go to Driving
    * @param msg - the CAN msg
    */
-  void hydraulicLineCallback(const unsigned char msg[8]);
+  void hydraulic_line_callback(const unsigned char msg[8]);
 
   /**
    * @brief Function to publish the motor speed, coming from the encoder
    * @param msg - the CAN msg
-  */
-  void motorSpeedPublisher(const unsigned char msg[8]);
+   */
+  void motor_speed_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Function to publish the battery voltage, from the BAMOCAR
    * @param msg - the CAN msg
-  */
-  void batteryVoltageCallback(const unsigned char msg[8]);
+   */
+  void battery_voltage_callback(const unsigned char msg[8]);
 
   /**
    * @brief Function to interpret the BAMOCAR CAN msg
    * @param msg - the CAN msg
-  */
-  void canInterpreterBamocar(const unsigned char msg[8]);
+   */
+  void can_interpreter_bamocar(const unsigned char msg[8]);
 
   /**
    * @brief Function to interpret the master status CAN msg
    * @param msg - the CAN msg
    */
-  void canInterpreterMasterStatus(const unsigned char msg[8]);
+  void can_interpreter_master_status(const unsigned char msg[8]);
 
   /**
    * @brief Function to handle the emergency message
    */
-  void emergencyCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
-                         std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+  void emergency_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+                          std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
   /**
    * @brief Function to handle the mission finished message
    */
-  void missionFinishedCallback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
-                               std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+  void mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+                                 std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
   /**
    * @brief Function to handle the control command message
    */
-  void controlCallback(custom_interfaces::msg::ControlCommand::SharedPtr msg);
+  void control_callback(custom_interfaces::msg::ControlCommand::SharedPtr msg);
 
   /**
    * @brief Function to publish the steering command to CAN
    * @param double steering value from ROS (in radians)
-  */
-  void sendSteeringControl(double steering_angle_ros);
+   */
+  void send_steering_control(double steering_angle_ros);
 
   /**
    * @brief Function to publish the throttle command to CAN
    * @param double value of the command from ROS
-  */
-  void sendThrottleControl(double throttle_value_ros);
+   */
+  void send_throttle_control(double throttle_value_ros);
 
   /**
    * @brief Function to send the alive message from the AS CU to Master
-  */
-  void aliveMsgCallback();
+   */
+  void alive_msg_callback();
 
   /**
    * @brief Sets the angle origin of the Cubemars steering actuator
-  */
-  void cubemSetOrigin();
+   */
+  void cubem_set_origin();
 
   /**
    * @brief Sets the current position as the Bosch steering angle origin (permanent)
    * @note This function is not currently used as it is meant to be used only once
-  */
-  void boschSteeringAngleSetOrigin();
+   */
+  void bosch_steering_angle_set_origin();
 
- public:
+public:
   /**
-  * @brief public function that sets the current_state_ to AS_DRIVING, helpful for testing
-  */
-  void setASDrivingState();
+   * @brief public function that sets the current_state_ to AS_DRIVING, helpful for testing
+   */
+  void set_as_driving_state();
 
   /**
    * @brief public function that sets the current_state_ to AS_OFF, helpful for testing
    */
-  void setASOffState();
+  void set_as_off_state();
 
   /**
    * @brief Contructor for the RosCan class
