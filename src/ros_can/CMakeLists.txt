@@ -11,18 +11,18 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(sensor_msgs REQUIRED)
 find_package(custom_interfaces REQUIRED)
-find_package(fs_msgs REQUIRED)
 find_package(canlib REQUIRED)
+find_package(std_srvs REQUIRED)
 
 
 set(IMPLEMENTATION_FILES 
   src/node/node_ros_can.cpp
+  src/utils/utils.cpp
 )
 
 add_executable(${PROJECT_NAME} src/main.cpp ${IMPLEMENTATION_FILES})
-ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs sensor_msgs custom_interfaces fs_msgs canlib)
+ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs std_srvs custom_interfaces canlib)
 target_link_libraries(ros_can canlib)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -35,7 +35,24 @@ install(TARGETS ros_can
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
-  find_package(ament_cmake_gtest REQUIRED)
+  find_package(ament_cmake_gmock REQUIRED)
+
+  set(TESTFILES
+          test/test_can.cpp
+  )
+
+  include_directories(test)  # Include the 'test' directory for your test targets
+  include_directories(${CMAKE_CURRENT_SOURCE_DIR})  # Include the current source directory
+
+  # Unit tests
+  ament_add_gmock(${PROJECT_NAME}_test ${TESTFILES} ${IMPLEMENTATION_FILES})
+  ament_target_dependencies(${PROJECT_NAME}_test rclcpp std_msgs std_srvs custom_interfaces canlib)
+  target_link_libraries(${PROJECT_NAME}_test canlib)
+  target_include_directories(${PROJECT_NAME}_test PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
+
+  install(TARGETS ${PROJECT_NAME}_test DESTINATION lib/${PROJECT_NAME})
 endif()
 
 ament_package()
