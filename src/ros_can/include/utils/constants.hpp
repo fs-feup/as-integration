@@ -14,14 +14,14 @@
 #define MASTER_AS_MISSION_CODE 0x32
 
 /*
- * value of msg[0] for RL RPM Code
- */
-#define MASTER_RL_RPM_CODE 0x33
-
-/*
  * value of msg[0] for RR RPM Code
  */
 #define TEENSY_C1_RR_RPM_CODE 0x11
+
+/*
+ * value of msg[0] for RL RPM Code
+ */
+#define TEENSY_C1_RL_RPM_CODE 0x12
 
 /*
  * value of msg[0] for AS CU alive message
