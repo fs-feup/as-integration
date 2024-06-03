@@ -296,7 +296,11 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
       break;
     }
     case TEENSY_C1: {
-      if (msg[0] == TEENSY_C1_RR_RPM_CODE) rr_rpm_publisher(msg);
+      if (msg[0] == TEENSY_C1_RR_RPM_CODE) {
+        rr_rpm_publisher(msg);
+      } else if (msg[0] == TEENSY_C1_RL_RPM_CODE) {
+        rl_rpm_publisher(msg);
+      }
       break;
     }
     case STEERING_CUBEM_ID: {
@@ -349,10 +353,6 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
     case MASTER_AS_MISSION_CODE: {
       this->as_mission_ = msg[1];
         op_status_publisher();
-      break;
-    }
-    case MASTER_RL_RPM_CODE: {
-        rl_rpm_publisher(msg);
       break;
     }
     default:
