@@ -14,7 +14,7 @@
 #include "utils/utils.hpp"
 
 RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
-    : Node("node_ros_can"), can_lib_wrapper_(std::move(can_lib_wrapper_param)) {
+    : Node("ros_can"), can_lib_wrapper_(std::move(can_lib_wrapper_param)) {
   operational_status_ = this->create_publisher<custom_interfaces::msg::OperationalStatus>(
       "/vehicle/operational_status", 10);
 
@@ -64,6 +64,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to turn on CAN bus");
   }
+  // this->bosch_steering_angle_set_origin();
   RCLCPP_INFO(this->get_logger(), "Node initialized");
 }
 
@@ -196,7 +197,7 @@ void RosCan::alive_msg_callback() {
   void *msg = &data;
   unsigned int dlc = 1;
   unsigned int flag = 0;
-  RCLCPP_DEBUG(this->get_logger(), "Sending alive message to AS_CU_NODE");
+  RCLCPP_DEBUG(this->get_logger(), "Sending alive message to Master");
 
   stat_ = can_lib_wrapper_->canWrite(hnd_, id, msg, dlc, flag);
   if (stat_ != canOK) {
@@ -274,7 +275,7 @@ void RosCan::can_sniffer() {
 
   stat_ = can_lib_wrapper_->canRead(hnd_, &id, &msg, &dlc, &flag, &time);
   while (stat_ == canOK) {
-      can_interpreter(id, msg, dlc, flag, time);
+    can_interpreter(id, msg, dlc, flag, time);
     stat_ = can_lib_wrapper_->canRead(hnd_, &id, &msg, &dlc, &flag, &time);
   }
 }
