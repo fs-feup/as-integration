@@ -370,7 +370,7 @@ void RosCan::op_status_publisher() {
 
 void RosCan::imu_yaw_acc_y_publisher(const unsigned char msg[8]) {
   float yawRate = (msg[0]) * QUANTIZATION_GYRO;
-  float accX = (msg[2] + msg[3]) * QUANTIZATION_ACC;
+  float accY = (msg[4]) * QUANTIZATION_ACC;
   auto message = custom_interfaces::msg::ImuData();
   message.header.stamp = this->get_clock()->now();
   message.gyro = yawRate;
@@ -428,7 +428,7 @@ void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
 
 void RosCan::imu_pitch_acc_z_publisher(const unsigned char msg[8]) {
   float pitchRate = (msg[0]) * QUANTIZATION_GYRO;
-  float accX = (msg[4] + msg[5]) * QUANTIZATION_ACC;
+  float accZ = (msg[4]) * QUANTIZATION_ACC;
   auto message = custom_interfaces::msg::ImuData();
   message.header.stamp = this->get_clock()->now();
   message.gyro = pitchRate;
