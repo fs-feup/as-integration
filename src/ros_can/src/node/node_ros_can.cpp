@@ -1,4 +1,4 @@
-
+#include <bitset>
 #include "node/node_ros_can.hpp"
 
 #include <canlib.h>
@@ -405,20 +405,23 @@ void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
       "Z have a problem");
 
   }
+  // std::bitset<8> x(msg[0]);
+  // std::bitset<8> y(msg[1]);
+  // std::cout << x << y << std::endl;
 
-  float accX = ((msg[0] << 8 | msg[1]) - 0X8000) * QUANTIZATION_ACC;
-  float accY = ((msg[2] << 8 | msg[3]) - 0X8000) * QUANTIZATION_ACC;
-  float accZ = ((msg[4] << 8 | msg[5]) - 0X8000) * QUANTIZATION_ACC;
+  float acc_y = ((msg[0] << 8 | msg[1]) - 0X8000) * QUANTIZATION_ACC;
+  float acc_z = ((msg[2] << 8 | msg[3]) - 0X8000) * QUANTIZATION_ACC;
+  float acc_x = ((msg[4] << 8 | msg[5]) - 0X8000) * QUANTIZATION_ACC;
 
   auto message = custom_interfaces::msg::ImuAcceleration();
   message.header.stamp = this->get_clock()->now();
-  message.acc_x = accX;
-  message.acc_y = accY;
-  message.acc_z = accZ;
+  message.acc_x = -acc_x;
+  message.acc_y = -acc_y;
+  message.acc_z = -acc_z;
 
   RCLCPP_DEBUG(this->get_logger(),
-               "Received IMU Acc: Acc X: %f --- Acc Y: %f --- Acc Z: %f", accX,
-               accY, accZ);
+               "Received IMU Acc: Acc X: %f --- Acc Y: %f --- Acc Z: %f", message.acc_x,
+               message.acc_y, message.acc_z);
   imu_acc_pub_->publish(message);
 }
 
@@ -491,8 +494,8 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
   message.header.stamp = this->get_clock()->now();
   message.steering_angle = static_cast<double>(angle) / 1000000;
   message.steering_speed = static_cast<double>(speed);
-  // RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %f", message.steering_angle);
-  // bosch_steering_angle_publisher_->publish(message); // wrong publisher
+  RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %f", message.steering_angle);
+  bosch_steering_angle_publisher_->publish(message); // wrong publisher
 }
 
 void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
@@ -525,7 +528,7 @@ void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
   short speed_value = msg[3] << 7 | (msg[4] >> 1);
   float speed = negative ? -(speed_value / 10.0) : speed_value / 10.0;
 
-  // RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (degrees): %f", angle);
+  RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (degrees): %f", angle);
   speed = speed * M_PI / 180;
   angle = angle * M_PI / 180;
   this->steering_angle_ = angle;  // Used for initial adjustment
@@ -535,7 +538,7 @@ void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
   message.header.stamp = this->get_clock()->now();
   message.steering_angle = angle;
   message.steering_speed = speed;
-  // RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (radians): %f", angle);
+  RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (radians): %f", angle);
   bosch_steering_angle_publisher_->publish(message);
 }
 
@@ -544,7 +547,7 @@ void RosCan::rr_rpm_publisher(const unsigned char msg[8]) {
   auto message = custom_interfaces::msg::WheelRPM();
   message.header.stamp = this->get_clock()->now();
   message.rr_rpm = rrRPM;
-  // RCLCPP_DEBUG(this->get_logger(), "Received RR RPM: %f", rrRPM);
+  RCLCPP_DEBUG(this->get_logger(), "Received RR RPM: %f", rrRPM);
   rr_rpm_pub_->publish(message);
 }
 
@@ -553,7 +556,7 @@ void RosCan::rl_rpm_publisher(const unsigned char msg[8]) {
   auto message = custom_interfaces::msg::WheelRPM();
   message.header.stamp = this->get_clock()->now();
   message.rl_rpm = rlRPM;
-  // RCLCPP_DEBUG(this->get_logger(), "Received RL RPM: %f", rlRPM);
+  RCLCPP_DEBUG(this->get_logger(), "Received RL RPM: %f", rlRPM);
   rl_rpm_pub_->publish(message);
 }
 

@@ -146,13 +146,13 @@
  * Quantization for the acceleration
  * m/s²/digit
  */
-#define QUANTIZATION_ACC (0.0001274 * 9.8)
+#define QUANTIZATION_ACC (0.0019616)
 
 /*
  * Quantization for the gyro
  * rad/s/digit
  */
-#define QUANTIZATION_GYRO (0.005)
+#define QUANTIZATION_GYRO (0.01)
 
 
 
