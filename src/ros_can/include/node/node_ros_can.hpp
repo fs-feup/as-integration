@@ -14,9 +14,9 @@
 #include "custom_interfaces/msg/operational_status.hpp"
 #include "custom_interfaces/msg/steering_angle.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
+#include "custom_interfaces/msg/imu_acceleration.hpp"
+#include "custom_interfaces/msg/yaw_pitch_roll.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "sensor_msgs/Imu.h"
-#include "geometry_msgs/Vector3.h"
 
 class RosCan : public rclcpp::Node {
 private:
@@ -24,14 +24,13 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::OperationalStatus>::SharedPtr operational_status_;
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rl_rpm_pub_;
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rr_rpm_pub_;
-  rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imu_yaw_acc_y_pub_;
-  rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imu_roll_acc_x_pub_;
-  rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imu_pitch_acc_z_pub_;
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr steering_angle_bosch_;
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;
 
-  rclcpp::Publisher<sensor_msgs::Imu>::SharedPtr imu_acc_pub_;
+  // IMU Data Publishers
+  rclcpp::Publisher<custom_interfaces::msg::ImuAcceleration>::SharedPtr imu_acc_pub_;
+  rclcpp::Publisher<custom_interfaces::msg::YawPitchRoll>::SharedPtr imu_odom_pub_;
 
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF;
@@ -110,22 +109,15 @@ private:
   void op_status_publisher();
 
   /**
-   * @brief Function to publish the Yaw rate and Acceleration in Y
-   * @param msg - the CAN msg
-   */
-  void imu_yaw_acc_y_publisher(const unsigned char msg[8]);
-
-  /**
    * @brief Function to publish the Roll rate and Acceleration in X
    * @param msg - the CAN msg
    */
   void imu_roll_acc_x_publisher(const unsigned char msg[8]);
 
-  /**
-   * @brief Function to publish the Pitch rate and Acceleration in Z
-   * @param msg - the CAN msg
-   */
-  void imu_pitch_acc_z_publisher(const unsigned char msg[8]);
+
+  void imu_acc_publisher(const unsigned char msg[8]);
+
+  void imu_odom_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Function to publish the steering angle form steering actuator (CubeMars)

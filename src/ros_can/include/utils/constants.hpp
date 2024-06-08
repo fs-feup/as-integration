@@ -136,12 +136,9 @@
  */
 #define TORQUE_COMMAND_BAMO_BYTE 0x90
 
-#define IMU_ROLL_RATE_ACC 0x175
+#define IMU_ACC 0x175
 
-
-
-
-
+#define IMU_ODOM 0x179
 
 // -------------- SENSORS CONSTANTS --------------
 

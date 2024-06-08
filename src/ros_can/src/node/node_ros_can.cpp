@@ -21,14 +21,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   rl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rl_rpm", 10);
   rr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rr_rpm", 10);
 
-  imu_yaw_acc_y_pub_ =
-      this->create_publisher<custom_interfaces::msg::ImuData>("/vehicle/imu_yaw_acc_y", 10);
-  imu_roll_acc_x_pub_ =
-      this->create_publisher<custom_interfaces::msg::ImuData>("/vehicle/imu_roll_acc_x", 10);
-  imu_pitch_acc_z_pub_ =
-      this->create_publisher<custom_interfaces::msg::ImuData>("/vehicle/imu_pitch_acc_z", 10);
-
-  imu_acc_pub_ = this->create_publisher<sensor_msgs::Imu>("/vehicle/acc", 10);
+  imu_acc_pub_ = this->create_publisher<custom_interfaces::msg::ImuAcceleration>("/vehicle/acceleration", 10);
+  imu_odom_pub_ = this->create_publisher<custom_interfaces::msg::YawPitchRoll>("/vehicle/odometry", 10);
 
   bosch_steering_angle_publisher_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
       "/vehicle/bosch_steering_angle", 10);
@@ -287,8 +281,13 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
     }
 
     // Accelearation from IMU
-    case IMU_ROLL_RATE_ACC: {
+    case IMU_ACC: {
       imu_acc_publisher(msg);
+      break;
+    }
+
+    case IMU_ODOM: {
+      imu_odom_publisher(msg);
       break;
     }
 
@@ -368,31 +367,6 @@ void RosCan::op_status_publisher() {
   operational_status_->publish(message);
 }
 
-void RosCan::imu_yaw_acc_y_publisher(const unsigned char msg[8]) {
-  float yawRate = (msg[0]) * QUANTIZATION_GYRO;
-  float accY = (msg[4]) * QUANTIZATION_ACC;
-  auto message = custom_interfaces::msg::ImuData();
-  message.header.stamp = this->get_clock()->now();
-  message.gyro = yawRate;
-  message.acc = accY;
-  RCLCPP_DEBUG(this->get_logger(),
-               "Received IMU Acc.Y and Yaw Rate Message: Yaw Rate: %f --- Acc Y: %f", yawRate,
-               accY);
-  imu_yaw_acc_y_pub_->publish(message);
-}
-
-void RosCan::imu_roll_acc_x_publisher(const unsigned char msg[8]) {
-  float rollRate = (msg[0]) * QUANTIZATION_GYRO;
-  float accX = (msg[0] + msg[1]) * QUANTIZATION_ACC;
-  auto message = custom_interfaces::msg::ImuData();
-  message.header.stamp = this->get_clock()->now();
-  message.gyro = rollRate;
-  message.acc = accX;
-  RCLCPP_DEBUG(this->get_logger(),
-               "Received IMU Acc.X and Roll Rate Message: Roll Rate: %f --- Acc X: %f", rollRate,
-               accX);
-  imu_roll_acc_x_pub_->publish(message);
-}
 
 void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
 
@@ -410,33 +384,43 @@ void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
   float accY = (msg[2] + msg[3]) * QUANTIZATION_ACC;
   float accY = (msg[4] + msg[5]) * QUANTIZATION_ACC;
 
-  imu_msg.linear_acceleration.x = accX;
-  imu_msg.linear_acceleration.y = accY;
-  imu_msg.linear_acceleration.z = accZ;
-  
-
-  auto message = custom_interfaces::msg::ImuData();
+  auto message = custom_interfaces::msg::ImuAcceleration();
   message.header.stamp = this->get_clock()->now();
-  message.gyro = rollRate;
-  message.acc = accX;
+  message.accX = accX;
+  message.accY = accY;
+  message.accZ = accZ;
+
   RCLCPP_DEBUG(this->get_logger(),
-               "Received IMU Acc and Roll Rate Message: Acc X: %f --- Acc Y: %f --- Acc Z: %f", accX,
+               "Received IMU Acc: Acc X: %f --- Acc Y: %f --- Acc Z: %f", accX,
                accY, accZ);
   imu_acc_pub_->publish(imu_msg);
 }
 
+void RosCan::imu_odom_publisher(const unsigned char msg[8]){
+  if (!checkCRC8(msg)){
+    RCLCPP_WARN(this->get_logger(),
+      "Invalid CRC8 received from Bosh IMU; dumping message...");
+  }
+        
+  if(((msg[6] & 0b11110000) == 0)){ // Check if the signal is valid
+    RCLCPP_WARN(this->get_logger(),
+      "Invalid signal from IMU");
+  }
 
-void RosCan::imu_pitch_acc_z_publisher(const unsigned char msg[8]) {
-  float pitchRate = (msg[0]) * QUANTIZATION_GYRO;
-  float accZ = (msg[4]) * QUANTIZATION_ACC;
-  auto message = custom_interfaces::msg::ImuData();
+  float roll = (msg[0] + msg[1]) * QUANTIZATION_GYRO;
+  float pitch = (msg[2] + msg[3]) * QUANTIZATION_GYRO;
+  float yaw = (msg[4] + msg[5]) * QUANTIZATION_GYRO;
+
+  auto message = custom_interfaces::msg::YawPitchRoll();
   message.header.stamp = this->get_clock()->now();
-  message.gyro = pitchRate;
-  message.acc = accZ;
+  message.roll = roll;
+  message.pitch = pitch;
+  message.yaw = yaw;
+
   RCLCPP_DEBUG(this->get_logger(),
-               "Received IMU Acc.Z and Pitch Rate Message: Pitch Rate: %f --- Acc Z: %f", pitchRate,
-               accZ);
-  imu_pitch_acc_z_pub_->publish(message);
+               "Received IMU Odom: Yaw: %f --- Pitch: %f --- Roll: %f", yaw,
+               pitch, roll);
+  imu_odom_pub_->publish(message);
 }
 
 // Useless right now
