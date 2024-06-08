@@ -15,6 +15,8 @@
 #include "custom_interfaces/msg/steering_angle.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/Imu.h"
+#include "geometry_msgs/Vector3.h"
 
 class RosCan : public rclcpp::Node {
 private:
@@ -28,6 +30,8 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr steering_angle_bosch_;
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;
+
+  rclcpp::Publisher<sensor_msgs::Imu>::SharedPtr imu_acc_pub_;
 
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF;

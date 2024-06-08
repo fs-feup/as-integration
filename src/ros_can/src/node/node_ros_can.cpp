@@ -28,6 +28,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   imu_pitch_acc_z_pub_ =
       this->create_publisher<custom_interfaces::msg::ImuData>("/vehicle/imu_pitch_acc_z", 10);
 
+  imu_acc_pub_ = this->create_publisher<sensor_msgs::Imu>("/vehicle/acc", 10);
+
   bosch_steering_angle_publisher_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
       "/vehicle/bosch_steering_angle", 10);
   control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
@@ -283,18 +285,13 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
         can_interpreter_master_status(msg);
       break;
     }
-    case IMU_YAW_RATE_ACC_Y_ID: {
-        imu_yaw_acc_y_publisher(msg);
+
+    // Accelearation from IMU
+    case IMU_ROLL_RATE_ACC: {
+      imu_acc_publisher(msg);
       break;
     }
-    case IMU_ROLL_RATE_ACC_X_ID: {
-        imu_roll_acc_x_publisher(msg);
-      break;
-    }
-    case IMU_PITCH_RATE_ACC_Z_ID: {
-        imu_pitch_acc_z_publisher(msg);
-      break;
-    }
+
     case TEENSY_C1: {
       if (msg[0] == TEENSY_C1_RR_RPM_CODE) {
         rr_rpm_publisher(msg);
@@ -373,7 +370,7 @@ void RosCan::op_status_publisher() {
 
 void RosCan::imu_yaw_acc_y_publisher(const unsigned char msg[8]) {
   float yawRate = (msg[0]) * QUANTIZATION_GYRO;
-  float accY = (msg[4]) * QUANTIZATION_ACC;
+  float accX = (msg[2] + msg[3]) * QUANTIZATION_ACC;
   auto message = custom_interfaces::msg::ImuData();
   message.header.stamp = this->get_clock()->now();
   message.gyro = yawRate;
@@ -386,7 +383,7 @@ void RosCan::imu_yaw_acc_y_publisher(const unsigned char msg[8]) {
 
 void RosCan::imu_roll_acc_x_publisher(const unsigned char msg[8]) {
   float rollRate = (msg[0]) * QUANTIZATION_GYRO;
-  float accX = (msg[4]) * QUANTIZATION_ACC;
+  float accX = (msg[0] + msg[1]) * QUANTIZATION_ACC;
   auto message = custom_interfaces::msg::ImuData();
   message.header.stamp = this->get_clock()->now();
   message.gyro = rollRate;
@@ -397,9 +394,41 @@ void RosCan::imu_roll_acc_x_publisher(const unsigned char msg[8]) {
   imu_roll_acc_x_pub_->publish(message);
 }
 
+void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
+
+  if (!checkCRC8(msg)){
+    RCLCPP_WARN(this->get_logger(),
+      "Invalid CRC8 received from Bosh IMU; dumping message...");
+  }
+        
+  if(((msg[6] & 0b11110000) == 0)){ // Check if the signal is valid
+    RCLCPP_WARN(this->get_logger(),
+      "Invalid signal from IMU");
+  }
+
+  float accX = (msg[0] + msg[1]) * QUANTIZATION_ACC;
+  float accY = (msg[2] + msg[3]) * QUANTIZATION_ACC;
+  float accY = (msg[4] + msg[5]) * QUANTIZATION_ACC;
+
+  imu_msg.linear_acceleration.x = accX;
+  imu_msg.linear_acceleration.y = accY;
+  imu_msg.linear_acceleration.z = accZ;
+  
+
+  auto message = custom_interfaces::msg::ImuData();
+  message.header.stamp = this->get_clock()->now();
+  message.gyro = rollRate;
+  message.acc = accX;
+  RCLCPP_DEBUG(this->get_logger(),
+               "Received IMU Acc and Roll Rate Message: Acc X: %f --- Acc Y: %f --- Acc Z: %f", accX,
+               accY, accZ);
+  imu_acc_pub_->publish(imu_msg);
+}
+
+
 void RosCan::imu_pitch_acc_z_publisher(const unsigned char msg[8]) {
   float pitchRate = (msg[0]) * QUANTIZATION_GYRO;
-  float accZ = (msg[4]) * QUANTIZATION_ACC;
+  float accX = (msg[4] + msg[5]) * QUANTIZATION_ACC;
   auto message = custom_interfaces::msg::ImuData();
   message.header.stamp = this->get_clock()->now();
   message.gyro = pitchRate;

@@ -14,6 +14,7 @@ find_package(std_msgs REQUIRED)
 find_package(custom_interfaces REQUIRED)
 find_package(canlib REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 
 set(IMPLEMENTATION_FILES 
@@ -22,7 +23,7 @@ set(IMPLEMENTATION_FILES
 )
 
 add_executable(${PROJECT_NAME} src/main.cpp ${IMPLEMENTATION_FILES})
-ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs std_srvs custom_interfaces canlib)
+ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs std_srvs custom_interfaces canlib sensor_msgs)
 target_link_libraries(ros_can canlib)
 
 target_include_directories(${PROJECT_NAME} PUBLIC

@@ -136,26 +136,7 @@
  */
 #define TORQUE_COMMAND_BAMO_BYTE 0x90
 
-/*
- * ID used from the IMU for:
- * yaw rate
- * acceleration in y
- */
-#define IMU_YAW_RATE_ACC_Y_ID 0x175
-
-/*
- * ID used from the IMU for:
- * roll rate
- * acceleration in x
- */
-#define IMU_ROLL_RATE_ACC_X_ID 0x179 
-
-/*
- * ID used from the IMU for:
- * pitch rate
- * acceleration in z
- */
-#define IMU_PITCH_RATE_ACC_Z_ID 0x17C
+#define IMU_ROLL_RATE_ACC 0x175
 
 
 
