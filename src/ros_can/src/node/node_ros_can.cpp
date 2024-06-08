@@ -370,33 +370,36 @@ void RosCan::op_status_publisher() {
 
 void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
 
+  /*
   if (!checkCRC8(msg)){
     RCLCPP_WARN(this->get_logger(),
       "Invalid CRC8 received from Bosh IMU; dumping message...");
   }
-        
-  if(((msg[6] & 0b11110000) == 0)){ // Check if the signal is valid
+  */
+     
+  if(!((msg[6] & 0b11110000) == 0)){ // Check if the signal is valid
     RCLCPP_WARN(this->get_logger(),
       "Invalid signal from IMU");
   }
 
   float accX = (msg[0] + msg[1]) * QUANTIZATION_ACC;
   float accY = (msg[2] + msg[3]) * QUANTIZATION_ACC;
-  float accY = (msg[4] + msg[5]) * QUANTIZATION_ACC;
+  float accZ = (msg[4] + msg[5]) * QUANTIZATION_ACC;
 
   auto message = custom_interfaces::msg::ImuAcceleration();
   message.header.stamp = this->get_clock()->now();
-  message.accX = accX;
-  message.accY = accY;
-  message.accZ = accZ;
+  message.acc_x = accX;
+  message.acc_y = accY;
+  message.acc_z = accZ;
 
   RCLCPP_DEBUG(this->get_logger(),
                "Received IMU Acc: Acc X: %f --- Acc Y: %f --- Acc Z: %f", accX,
                accY, accZ);
-  imu_acc_pub_->publish(imu_msg);
+  imu_acc_pub_->publish(message);
 }
 
 void RosCan::imu_odom_publisher(const unsigned char msg[8]){
+  /*
   if (!checkCRC8(msg)){
     RCLCPP_WARN(this->get_logger(),
       "Invalid CRC8 received from Bosh IMU; dumping message...");
@@ -406,6 +409,7 @@ void RosCan::imu_odom_publisher(const unsigned char msg[8]){
     RCLCPP_WARN(this->get_logger(),
       "Invalid signal from IMU");
   }
+  */
 
   float roll = (msg[0] + msg[1]) * QUANTIZATION_GYRO;
   float pitch = (msg[2] + msg[3]) * QUANTIZATION_GYRO;
