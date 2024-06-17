@@ -189,7 +189,7 @@ void RosCan::alive_msg_callback() {
   void *msg = &data;
   unsigned int dlc = 1;
   unsigned int flag = 0;
-  RCLCPP_DEBUG(this->get_logger(), "Sending alive message to AS_CU_NODE");
+  RCLCPP_DEBUG(this->get_logger(), "Sending alive message from AS_CU_NODE");
 
   stat_ = can_lib_wrapper_->canWrite(hnd_, id, msg, dlc, flag);
   if (stat_ != canOK) {
@@ -287,7 +287,7 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
     }
 
     case IMU_ODOM: {
-      imu_odom_publisher(msg);
+      imu_ang_vel_publisher(msg);
       break;
     }
 
@@ -370,40 +370,28 @@ void RosCan::op_status_publisher() {
 
 void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
 
-  /*
-  if (!checkCRC8(msg)){
-    RCLCPP_WARN(this->get_logger(),
-      "Invalid CRC8 received from Bosh IMU; dumping message...");
-  }
-  */
-     
-  if(!((msg[6] & 0b11110000) == 0)){ // Check if the signal is valid
-    RCLCPP_WARN(this->get_logger(),
-      "Invalid signal from IMU");
-  }
-
-    if ((msg[6] & 0b10000000) != 0){
+  if ((msg[6] & 0b10000000) != 0){
     RCLCPP_WARN(this->get_logger(), 
-      "Sensor is initializing");
-
+      "Bosch IMU Sensor is initializing");
+    return;
   }
 
   if ((msg[6] & 0b01000000) != 0){
     RCLCPP_WARN(this->get_logger(), 
-      "X have a problem");
-
+      "Invalid Acceleration X from IMU.");
+    return;
   }
 
   if ((msg[6] & 0b00100000) != 0){
     RCLCPP_WARN(this->get_logger(), 
-      "Y have a problem");
-
+      "Invalid Acceleration Y from IMU.");
+    return;
   }
 
   if ((msg[6] & 0b00010000) != 0){
     RCLCPP_WARN(this->get_logger(), 
-      "Z have a problem");
-
+      "Invalid Acceleration Z from IMU.");
+    return;
   }
   // std::bitset<8> x(msg[0]);
   // std::bitset<8> y(msg[1]);
@@ -425,47 +413,35 @@ void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
   imu_acc_pub_->publish(message);
 }
 
-void RosCan::imu_odom_publisher(const unsigned char msg[8]){
-  /*
-  if (!checkCRC8(msg)){
-    RCLCPP_WARN(this->get_logger(),
-      "Invalid CRC8 received from Bosh IMU; dumping message...");
-  }
-        
-  if(((msg[6] & 0b11110000) == 0)){ // Check if the signal is valid
-    RCLCPP_WARN(this->get_logger(),
-      "Invalid signal from IMU");
-  }
-  */
-
+void RosCan::imu_ang_vel_publisher(const unsigned char msg[8]) {
 
   if ((msg[6] & 0b10000000) != 0){
     RCLCPP_WARN(this->get_logger(), 
-      "Sensor is initializing");
-
+      "Bosch IMU Sensor is initializing");
+    return;
   }
 
   if ((msg[6] & 0b01000000) != 0){
     RCLCPP_WARN(this->get_logger(), 
-      "X have a problem");
-
+      "Invalid Yaw Rate value from IMU.");
+    return;
   }
 
   if ((msg[6] & 0b00100000) != 0){
     RCLCPP_WARN(this->get_logger(), 
-      "Y have a problem");
-
+      "Invalid Yaw Rate value from IMU.");
+    return;
   }
 
   if ((msg[6] & 0b00010000) != 0){
     RCLCPP_WARN(this->get_logger(), 
-      "Z have a problem");
-
+      "Invalid Yaw Rate value from IMU.");
+    return;
   }
 
   float roll = ((msg[0] << 8 | msg[1]) - 0x8000) * QUANTIZATION_GYRO;
   float pitch = ((msg[2] << 8| msg[3]) - 0x8000) * QUANTIZATION_GYRO;
-  float yaw = ((msg[4] << 8 | msg[5]) - 0x8000) * QUANTIZATION_GYRO;
+  float yaw = ((msg[4] << 8 | msg[5]) - 0x8000) * 0.01;
 
   auto message = custom_interfaces::msg::YawPitchRoll();
   message.header.stamp = this->get_clock()->now();
@@ -474,7 +450,7 @@ void RosCan::imu_odom_publisher(const unsigned char msg[8]){
   message.yaw = yaw;
 
   RCLCPP_DEBUG(this->get_logger(),
-               "Received IMU Odom: Yaw: %f --- Pitch: %f --- Roll: %f", yaw,
+               "Received IMU Angular Velocities: Yaw: %f --- Pitch: %f --- Roll: %f", yaw,
                pitch, roll);
   imu_odom_pub_->publish(message);
 }
@@ -572,9 +548,11 @@ void RosCan::set_as_off_state() { current_state_ = State::AS_OFF; }
 
 void RosCan::battery_voltage_callback(const unsigned char msg[8]) {
   this->battery_voltage_ = (msg[2] << 8) | msg[1];
+  RCLCPP_DEBUG(this->get_logger(), "Received voltage from Bamocar: %d", this->battery_voltage_);
 }
 
 void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
   this->motor_speed_ = (msg[2] << 8) | msg[1];
+  RCLCPP_DEBUG(this->get_logger(), "Received motor speed from Bamocar: %d", this->motor_speed_);
   // TODO: publish motor speed
 }

@@ -109,15 +109,16 @@ private:
   void op_status_publisher();
 
   /**
-   * @brief Function to publish the Roll rate and Acceleration in X
+   * @brief Receives IMU accelerations from CAN and publishes to ROS
    * @param msg - the CAN msg
    */
-  void imu_roll_acc_x_publisher(const unsigned char msg[8]);
-
-
   void imu_acc_publisher(const unsigned char msg[8]);
 
-  void imu_odom_publisher(const unsigned char msg[8]);
+  /**
+   * @brief Receives IMU angular velocities from CAN and publishes to ROS
+   * @param msg - the CAN msg
+   */
+  void imu_ang_vel_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Function to publish the steering angle form steering actuator (CubeMars)
