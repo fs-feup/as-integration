@@ -122,6 +122,7 @@ private:
 
   /**
    * @brief Function to publish the steering angle form steering actuator (CubeMars)
+   * Used only to initially set actuator origin
    * @param msg - the CAN msg
    */
   void steering_angle_cubem_publisher(const unsigned char msg[8]);
@@ -194,9 +195,9 @@ private:
 
   /**
    * @brief Function to publish the steering command to CAN
-   * @param double steering value from ROS (in radians)
+   * @param double steering value on the actuator (in radians)
    */
-  void send_steering_control(double steering_angle_ros);
+  void send_steering_control(double steering_angle_command);
 
   /**
    * @brief Function to publish the throttle command to CAN

@@ -22,7 +22,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   rr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rr_rpm", 10);
 
   imu_acc_pub_ = this->create_publisher<custom_interfaces::msg::ImuAcceleration>("/vehicle/acceleration", 10);
-  imu_odom_pub_ = this->create_publisher<custom_interfaces::msg::YawPitchRoll>("/vehicle/odometry", 10);
+  imu_odom_pub_ = this->create_publisher<custom_interfaces::msg::YawPitchRoll>("/vehicle/angular_velocities", 10);
 
   bosch_steering_angle_publisher_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
       "/vehicle/bosch_steering_angle", 10);
@@ -75,22 +75,23 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
     return;
   }
 
-  if (current_state_ == State::AS_DRIVING) {
+  // Convert to steering in actuator
+  double steering_angle_command = 0.0;
+  if (transform_steering_angle_command(msg->steering, steering_angle_command) != 0) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to transform steering angle command");
+    return;
+  }
+
+  if (this->go_signal_) {
     RCLCPP_INFO(this->get_logger(), "State is Driving: Steering: %f (radians), Throttle: %f",
                 msg->steering, msg->throttle);
 
-      send_steering_control(msg->steering);
+      send_steering_control(steering_angle_command);
       send_throttle_control(msg->throttle);
   }
 }
 
-void RosCan::send_steering_control(double steering_angle_ros) {
-  // Convert to steering in actuator
-  double steering_angle_command = 0.0;
-  if (transform_steering_angle_command(steering_angle_ros, steering_angle_command) != 0) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to transform steering angle command");
-    return;
-  }
+void RosCan::send_steering_control(double steering_angle_command) {
 
   long id = STEERING_COMMAND_CUBEM_ID;
   char buffer_steering[4];
@@ -116,13 +117,16 @@ void RosCan::send_steering_control(double steering_angle_ros) {
 void RosCan::send_throttle_control(double throttle_value_ros) {
   // Prepare the throttle message
   int throttle_command = static_cast<int>(throttle_value_ros * BAMOCAR_MAX_SCALE);
+  throttle_command = throttle_command < 0 ? 0 : throttle_command;
+  RCLCPP_DEBUG(this->get_logger(), "Command after conversion: %d", throttle_command);
   // CRITICAL CHECK - DO NOT REMOVE
   // Limit brake command if needed
-  if (throttle_command < 0) {
-    throttle_command = std::max(
-        throttle_command, max_torque_dynamic_limits(this->battery_voltage_, this->motor_speed_));
-  }
+  // if (throttle_command < 0) {
+  //   throttle_command = std::max(
+  //       throttle_command, max_torque_dynamic_limits(this->battery_voltage_, this->motor_speed_));
+  // }
 
+  RCLCPP_DEBUG(this->get_logger(), "Command after limiting: %d", throttle_command);
   long throttle_id = BAMO_COMMAND_ID;
   unsigned char buffer_throttle[3];
   buffer_throttle[0] = TORQUE_COMMAND_BAMO_BYTE;
@@ -150,6 +154,8 @@ void RosCan::emergency_callback(const std::shared_ptr<std_srvs::srv::Trigger::Re
   // Handle request
   response->success = true;
 
+  RCLCPP_DEBUG(this->get_logger(), "Received emergency signal.");
+
   // Prepare the emergency message
   long id = AS_CU_NODE_ID;              // Set the CAN ID
   unsigned char data = EMERGENCY_CODE;  // Set the data
@@ -168,6 +174,8 @@ void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trig
                                        std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
   // Handle request
   response->success = true;
+
+  RCLCPP_DEBUG(this->get_logger(), "Received mission finished.");
 
   // Prepare the emergency message
   long id = AS_CU_NODE_ID;                     // Set the CAN ID
@@ -189,7 +197,7 @@ void RosCan::alive_msg_callback() {
   void *msg = &data;
   unsigned int dlc = 1;
   unsigned int flag = 0;
-  RCLCPP_DEBUG(this->get_logger(), "Sending alive message from AS_CU_NODE");
+  // RCLCPP_DEBUG(this->get_logger(), "Sending alive message from AS_CU_NODE");
 
   stat_ = can_lib_wrapper_->canWrite(hnd_, id, msg, dlc, flag);
   if (stat_ != canOK) {
@@ -336,14 +344,15 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
     case MASTER_AS_STATE_CODE: {
       if (msg[1] == 3) {  // If AS State == Driving
         // Fix initial actuator angle
-                if (this->go_signal_ == 0) {
-            this->send_steering_control(-this->steering_angle_);
+        if (this->go_signal_ == 0) {
+          this->send_steering_control(-this->steering_angle_);
+          this->cubem_set_origin();
         }
         this->go_signal_ = 1;
       } else {
         this->go_signal_ = 0;
       }
-        op_status_publisher();
+      op_status_publisher();
       break;
     }
     case MASTER_AS_MISSION_CODE: {
@@ -361,9 +370,9 @@ void RosCan::op_status_publisher() {
   message.header.stamp = this->get_clock()->now();
   message.go_signal = this->go_signal_;
   message.as_mission = this->as_mission_;
-  RCLCPP_DEBUG(this->get_logger(),
-               "Received Operational Status Message: Go Signal: %d --- AS Mission: %d", go_signal_,
-               as_mission_);
+  // RCLCPP_DEBUG(this->get_logger(),
+  //              "Received Operational Status Message: Go Signal: %d --- AS Mission: %d", go_signal_,
+  //              as_mission_);
   operational_status_->publish(message);
 }
 
@@ -407,9 +416,9 @@ void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
   message.acc_y = -acc_y;
   message.acc_z = -acc_z;
 
-  RCLCPP_DEBUG(this->get_logger(),
-               "Received IMU Acc: Acc X: %f --- Acc Y: %f --- Acc Z: %f", message.acc_x,
-               message.acc_y, message.acc_z);
+  // RCLCPP_DEBUG(this->get_logger(),
+  //              "Received IMU Acc: Acc X: %f --- Acc Y: %f --- Acc Z: %f", message.acc_x,
+  //              message.acc_y, message.acc_z);
   imu_acc_pub_->publish(message);
 }
 
@@ -449,13 +458,13 @@ void RosCan::imu_ang_vel_publisher(const unsigned char msg[8]) {
   message.pitch = pitch;
   message.yaw = yaw;
 
-  RCLCPP_DEBUG(this->get_logger(),
-               "Received IMU Angular Velocities: Yaw: %f --- Pitch: %f --- Roll: %f", yaw,
-               pitch, roll);
+  // RCLCPP_DEBUG(this->get_logger(),
+              //  "Received IMU Angular Velocities: Yaw: %f --- Pitch: %f --- Roll: %f", yaw,
+              //  pitch, roll);
   imu_odom_pub_->publish(message);
 }
 
-// Useless right now
+// Used only to initially set actuator origin
 void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
   // When steering motor wakes up, set its origin
   if (!this->cubem_configuration_sent_) {
@@ -470,8 +479,7 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
   message.header.stamp = this->get_clock()->now();
   message.steering_angle = static_cast<double>(angle) / 1000000;
   message.steering_speed = static_cast<double>(speed);
-  RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %f", message.steering_angle);
-  bosch_steering_angle_publisher_->publish(message); // wrong publisher
+  // RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %f", message.steering_angle);
 }
 
 void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
@@ -504,17 +512,17 @@ void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
   short speed_value = msg[3] << 7 | (msg[4] >> 1);
   float speed = negative ? -(speed_value / 10.0) : speed_value / 10.0;
 
-  RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (degrees): %f", angle);
+  // RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (degrees): %f", angle);
   speed = speed * M_PI / 180;
   angle = angle * M_PI / 180;
-  this->steering_angle_ = angle;  // Used for initial adjustment
+  this->steering_angle_ = -angle;  // Used for initial adjustment
 
   // Send message
   auto message = custom_interfaces::msg::SteeringAngle();
   message.header.stamp = this->get_clock()->now();
-  message.steering_angle = angle;
+  message.steering_angle = this->steering_angle_;
   message.steering_speed = speed;
-  RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (radians): %f", angle);
+  // RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (radians): %f", this->steering_angle_);
   bosch_steering_angle_publisher_->publish(message);
 }
 
@@ -523,7 +531,7 @@ void RosCan::rr_rpm_publisher(const unsigned char msg[8]) {
   auto message = custom_interfaces::msg::WheelRPM();
   message.header.stamp = this->get_clock()->now();
   message.rr_rpm = rrRPM;
-  RCLCPP_DEBUG(this->get_logger(), "Received RR RPM: %f", rrRPM);
+  // RCLCPP_DEBUG(this->get_logger(), "Received RR RPM: %f", rrRPM);
   rr_rpm_pub_->publish(message);
 }
 
@@ -532,7 +540,7 @@ void RosCan::rl_rpm_publisher(const unsigned char msg[8]) {
   auto message = custom_interfaces::msg::WheelRPM();
   message.header.stamp = this->get_clock()->now();
   message.rl_rpm = rlRPM;
-  RCLCPP_DEBUG(this->get_logger(), "Received RL RPM: %f", rlRPM);
+  // RCLCPP_DEBUG(this->get_logger(), "Received RL RPM: %f", rlRPM);
   rl_rpm_pub_->publish(message);
 }
 
@@ -548,11 +556,11 @@ void RosCan::set_as_off_state() { current_state_ = State::AS_OFF; }
 
 void RosCan::battery_voltage_callback(const unsigned char msg[8]) {
   this->battery_voltage_ = (msg[2] << 8) | msg[1];
-  RCLCPP_DEBUG(this->get_logger(), "Received voltage from Bamocar: %d", this->battery_voltage_);
+  // RCLCPP_DEBUG(this->get_logger(), "Received voltage from Bamocar: %d", this->battery_voltage_);
 }
 
 void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
   this->motor_speed_ = (msg[2] << 8) | msg[1];
-  RCLCPP_DEBUG(this->get_logger(), "Received motor speed from Bamocar: %d", this->motor_speed_);
+  // RCLCPP_DEBUG(this->get_logger(), "Received motor speed from Bamocar: %d", this->motor_speed_);
   // TODO: publish motor speed
 }
