@@ -117,14 +117,13 @@ void RosCan::send_steering_control(double steering_angle_command) {
 void RosCan::send_throttle_control(double throttle_value_ros) {
   // Prepare the throttle message
   int throttle_command = static_cast<int>(throttle_value_ros * BAMOCAR_MAX_SCALE);
-  throttle_command = throttle_command < 0 ? 0 : throttle_command;
   RCLCPP_DEBUG(this->get_logger(), "Command after conversion: %d", throttle_command);
   // CRITICAL CHECK - DO NOT REMOVE
   // Limit brake command if needed
-  // if (throttle_command < 0) {
-  //   throttle_command = std::max(
-  //       throttle_command, max_torque_dynamic_limits(this->battery_voltage_, this->motor_speed_));
-  // }
+  if (throttle_command < 0) {
+    throttle_command = std::max(
+        throttle_command, max_torque_dynamic_limits(this->battery_voltage_, this->motor_speed_));
+  }
 
   RCLCPP_DEBUG(this->get_logger(), "Command after limiting: %d", throttle_command);
   long throttle_id = BAMO_COMMAND_ID;
