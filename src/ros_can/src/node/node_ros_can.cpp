@@ -293,7 +293,7 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
       break;
     }
 
-    case IMU_ODOM: {
+    case IMU_ANG_VEL: {
       imu_ang_vel_publisher(msg);
       break;
     }

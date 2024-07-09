@@ -58,7 +58,10 @@
 */
 #define BAMOCAR_MOTOR_SPEED_CODE 0x30
 
-
+/*
+ * Messager code that publish cmds to bamocar
+ */
+#define TORQUE_COMMAND_BAMO_BYTE 0x90
 
 
 
@@ -130,15 +133,17 @@
  */
 #define BAMO_COMMAND_ID 0x201
 
-/*
- * ID used for:
- * Publish cmds to bamocar
+/**
+ * ID used for accelerations
+ * from Bosch IMU
  */
-#define TORQUE_COMMAND_BAMO_BYTE 0x90
-
 #define IMU_ACC 0x175
 
-#define IMU_ODOM 0x179
+/**
+ * ID used for accelerations
+ * from Bosch IMU
+ */
+#define IMU_ANG_VEL 0x179
 
 // -------------- SENSORS CONSTANTS --------------
 
