@@ -24,6 +24,7 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::OperationalStatus>::SharedPtr operational_status_;
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rl_rpm_pub_;
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rr_rpm_pub_;
+  rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr motor_rpm_pub_;
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr steering_angle_bosch_;
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;
@@ -35,7 +36,7 @@ private:
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF;
   int battery_voltage_ = 0;
-  int motor_speed_ = 0;
+  int motor_speed_ = 0; /// Motor rpm
   int hydraulic_line_pressure_ = 0;
   double steering_angle_ = 0.0;
 

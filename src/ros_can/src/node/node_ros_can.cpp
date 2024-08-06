@@ -20,6 +20,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
 
   rl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rl_rpm", 10);
   rr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rr_rpm", 10);
+  motor_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/motor_rpm", 10);
 
   imu_acc_pub_ = this->create_publisher<custom_interfaces::msg::ImuAcceleration>("/vehicle/acceleration", 10);
   imu_odom_pub_ = this->create_publisher<custom_interfaces::msg::YawPitchRoll>("/vehicle/angular_velocities", 10);
@@ -560,6 +561,10 @@ void RosCan::battery_voltage_callback(const unsigned char msg[8]) {
 
 void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
   this->motor_speed_ = (msg[2] << 8) | msg[1];
+  auto message = custom_interfaces::msg::WheelRPM();
+  message.header.stamp = this->get_clock()->now();
+  message.rl_rpm = this->motor_speed_ * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE;
+  message.rr_rpm = this->motor_speed_ * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE;
   // RCLCPP_DEBUG(this->get_logger(), "Received motor speed from Bamocar: %d", this->motor_speed_);
-  // TODO: publish motor speed
+  motor_rpm_pub_->publish(message);
 }
