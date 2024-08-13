@@ -263,9 +263,6 @@ void RosCan::bosch_steering_angle_set_origin() {
 
 // -------------- CAN TO ROS --------------
 
-/**
- * @brief Function cyclically reads all CAN msg from buffer
- */
 void RosCan::can_sniffer() {
   long id;
   unsigned char msg[8];
