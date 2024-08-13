@@ -2,7 +2,7 @@
 #define SAFETY_MECHANISMS_HPP
 
 #include <assert.h>
-
+#include <algorithm>
 #include <cmath>
 #include <rclcpp/rclcpp.hpp>
 
@@ -39,9 +39,10 @@ void check_steering_safe(void *steering_payload_data) {
  */
 void check_throttle_safe(void *throttle_payload_data) {
   // DO NOT REMOVE NEXT BLOCK
-  unsigned char byte1 = static_cast<unsigned char>((static_cast<char *>(throttle_payload_data))[2]);
-  unsigned char byte0 = static_cast<unsigned char>((static_cast<char *>(throttle_payload_data))[1]);
+  char byte1 = static_cast<unsigned char>((static_cast<char *>(throttle_payload_data))[2]);
+  char byte0 = static_cast<unsigned char>((static_cast<char *>(throttle_payload_data))[1]);
   int val = ((byte1 << 8) | (byte0 & 0xff));
+  RCLCPP_DEBUG(rclcpp::get_logger("ros_can"), "Val: %d", val);
   // HARD THROTTLE UPPER LIMIT
   assert(val <= BAMOCAR_MAX_SCALE);
   // HARD THROTTLE LOWER LIMIT
@@ -67,7 +68,8 @@ bool brake_within_limits(int torque, int voltage, int rpm) {
 }
 
 /**
- * @brief Determines the max torque given the current rpm of the motor
+ * @brief Determines the max torque for braking 
+ * given the current rpm of the motor
  * and battery voltage. Follows the formula established in latex
  *
  * @param voltage Voltage value (CAN format)
@@ -75,10 +77,12 @@ bool brake_within_limits(int torque, int voltage, int rpm) {
  * @return int Max torque value (CAN format)
  */
 int max_torque_dynamic_limits(int voltage, int rpm) {
+  rpm = std::max(rpm, 1);
   int voltage_in_v = voltage * BAMOCAR_MAX_VOLTAGE / BAMOCAR_MAX_SCALE;
-  int motor_angular_speed = (rpm * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE) * M_PI / 30;
-  int max_torque_in_nm = 30 * voltage_in_v / motor_angular_speed;
-  return max_torque_in_nm * (sqrt(2) * BAMOCAR_MAX_SCALE) / (0.75 * BAMOCAR_MAX_CURRENT);
+  double motor_angular_speed = (rpm * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE) * M_PI / 30;
+  double max_torque_in_nm = 30 * voltage_in_v / motor_angular_speed;
+  int result = -(max_torque_in_nm * (sqrt(2) * BAMOCAR_MAX_SCALE) / (0.75 * BAMOCAR_MAX_CURRENT));
+  return result < 0 ? result : 0;
 }
 
 /**

@@ -58,7 +58,10 @@
 */
 #define BAMOCAR_MOTOR_SPEED_CODE 0x30
 
-
+/*
+ * Messager code that publish cmds to bamocar
+ */
+#define TORQUE_COMMAND_BAMO_BYTE 0x90
 
 
 
@@ -130,51 +133,31 @@
  */
 #define BAMO_COMMAND_ID 0x201
 
-/*
- * ID used for:
- * Publish cmds to bamocar
+/**
+ * ID used for accelerations
+ * from Bosch IMU
  */
-#define TORQUE_COMMAND_BAMO_BYTE 0x90
+#define IMU_ACC 0x175
 
-/*
- * ID used from the IMU for:
- * yaw rate
- * acceleration in y
+/**
+ * ID used for accelerations
+ * from Bosch IMU
  */
-#define IMU_YAW_RATE_ACC_Y_ID 0x175
-
-/*
- * ID used from the IMU for:
- * roll rate
- * acceleration in x
- */
-#define IMU_ROLL_RATE_ACC_X_ID 0x179 
-
-/*
- * ID used from the IMU for:
- * pitch rate
- * acceleration in z
- */
-#define IMU_PITCH_RATE_ACC_Z_ID 0x17C
-
-
-
-
-
+#define IMU_ANG_VEL 0x179
 
 // -------------- SENSORS CONSTANTS --------------
 
 /*
  * Quantization for the acceleration
- * g/digit
+ * m/s²/digit
  */
-#define QUANTIZATION_ACC 0.0001274
+#define QUANTIZATION_ACC (0.0019616)
 
 /*
  * Quantization for the gyro
- * degree/s/digit
+ * rad/s/digit
  */
-#define QUANTIZATION_GYRO 0.005
+#define QUANTIZATION_GYRO (0.01)
 
 
 

@@ -14,6 +14,8 @@
 #include "custom_interfaces/msg/operational_status.hpp"
 #include "custom_interfaces/msg/steering_angle.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
+#include "custom_interfaces/msg/imu_acceleration.hpp"
+#include "custom_interfaces/msg/yaw_pitch_roll.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 class RosCan : public rclcpp::Node {
@@ -22,17 +24,19 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::OperationalStatus>::SharedPtr operational_status_;
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rl_rpm_pub_;
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rr_rpm_pub_;
-  rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imu_yaw_acc_y_pub_;
-  rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imu_roll_acc_x_pub_;
-  rclcpp::Publisher<custom_interfaces::msg::ImuData>::SharedPtr imu_pitch_acc_z_pub_;
+  rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr motor_rpm_pub_;
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr steering_angle_bosch_;
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;
 
+  // IMU Data Publishers
+  rclcpp::Publisher<custom_interfaces::msg::ImuAcceleration>::SharedPtr imu_acc_pub_;
+  rclcpp::Publisher<custom_interfaces::msg::YawPitchRoll>::SharedPtr imu_odom_pub_;
+
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF;
   int battery_voltage_ = 0;
-  int motor_speed_ = 0;
+  int motor_speed_ = 0; /// Motor rpm
   int hydraulic_line_pressure_ = 0;
   double steering_angle_ = 0.0;
 
@@ -106,25 +110,20 @@ private:
   void op_status_publisher();
 
   /**
-   * @brief Function to publish the Yaw rate and Acceleration in Y
+   * @brief Receives IMU accelerations from CAN and publishes to ROS
    * @param msg - the CAN msg
    */
-  void imu_yaw_acc_y_publisher(const unsigned char msg[8]);
+  void imu_acc_publisher(const unsigned char msg[8]);
 
   /**
-   * @brief Function to publish the Roll rate and Acceleration in X
+   * @brief Receives IMU angular velocities from CAN and publishes to ROS
    * @param msg - the CAN msg
    */
-  void imu_roll_acc_x_publisher(const unsigned char msg[8]);
-
-  /**
-   * @brief Function to publish the Pitch rate and Acceleration in Z
-   * @param msg - the CAN msg
-   */
-  void imu_pitch_acc_z_publisher(const unsigned char msg[8]);
+  void imu_ang_vel_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Function to publish the steering angle form steering actuator (CubeMars)
+   * Used only to initially set actuator origin
    * @param msg - the CAN msg
    */
   void steering_angle_cubem_publisher(const unsigned char msg[8]);
@@ -197,9 +196,9 @@ private:
 
   /**
    * @brief Function to publish the steering command to CAN
-   * @param double steering value from ROS (in radians)
+   * @param double steering value on the actuator (in radians)
    */
-  void send_steering_control(double steering_angle_ros);
+  void send_steering_control(double steering_angle_command);
 
   /**
    * @brief Function to publish the throttle command to CAN
