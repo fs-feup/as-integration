@@ -67,7 +67,7 @@ protected:
    * @param steering The steering value.
    * @param expectedCalls number o0f calls expect for each canWrite function.
    */
-  void prepare_out_of_range_values(float throttle, float steering,
+  void prepare_control_publish_values(float throttle, float steering,
                                    int expectedCalls) {
     control_command_->throttle = throttle;
     control_command_->steering = steering;

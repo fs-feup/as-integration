@@ -250,8 +250,16 @@ public:
    */
   void set_as_off_state();
 
+  /**
+   * @brief Public function that turns off the "Go" signal, helpful for testing
+   * 
+   */
   void set_as_off_go_signal();
 
+  /**
+   * @brief Public function that turns on the "Go" signal, helpful for testing
+   * 
+   */
   void set_as_on_go_signal();
 
   /**
@@ -260,6 +268,10 @@ public:
   RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param);
 
   FRIEND_TEST(RosCanTest, ControlCallback);
+  FRIEND_TEST(RosCanTest, ControlCallbackLowerThrottle);
+  FRIEND_TEST(RosCanTest, ControlCallbackHigherThrottle);
+  FRIEND_TEST(RosCanTest, ControlCallbackLowerSteering);
+  FRIEND_TEST(RosCanTest, ControlCallbackHigherSteering);
   FRIEND_TEST(RosCanTest, PublishControlCallback);
   FRIEND_TEST(RosCanTest, TestImuYawAccYPublisher);
   FRIEND_TEST(RosCanTest, TestCanInterpreterMasterStatusMission);
