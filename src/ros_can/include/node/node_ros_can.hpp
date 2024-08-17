@@ -44,7 +44,7 @@ private:
 
   // IMU Data Publishers
   rclcpp::Publisher<custom_interfaces::msg::ImuAcceleration>::SharedPtr imu_acc_pub_; ///< Publisher for IMU acceleration data
-  rclcpp::Publisher<custom_interfaces::msg::YawPitchRoll>::SharedPtr imu_odom_pub_; ///< Publisher for IMU orientation data
+  rclcpp::Publisher<custom_interfaces::msg::YawPitchRoll>::SharedPtr imu_orientation_pub_; ///< Publisher for IMU orientation data
 
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF; ///< Current operational state of the vehicle
@@ -86,8 +86,9 @@ private:
   /**
    * @brief Function to turn ON and OFF the CAN BUS
    * @param busStatus - the status of the bus
-   */
+   
    void busStatus_callback(std_msgs::msg::String busStatus);
+  */
 
   /**
    * @brief Function to cyclically read all CAN messages from the buffer.
@@ -96,7 +97,7 @@ private:
   void can_sniffer();
 
   /**
-   * @brief Interprets a CAN message and processes it based on its ID and content.
+   * @brief Parses and interprets a CAN message and processes it based on its ID and content.
    * @param id CAN message ID
    * @param msg CAN message data
    * @param dlc Data length code
@@ -118,10 +119,10 @@ private:
   void imu_acc_publisher(const unsigned char msg[8]);
 
   /**
-   * @brief Receives IMU angular velocities from CAN and publishes them to ROS.
+   * @brief Receives IMU orientation from CAN and publishes them to ROS.
    * @param msg CAN message data
    */
-  void imu_ang_vel_publisher(const unsigned char msg[8]);
+  void imu_orientation_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Publishes the steering angle from Cubemars steering actuator. 
@@ -248,6 +249,10 @@ public:
    * @brief public function that sets the current_state_ to AS_OFF, helpful for testing
    */
   void set_as_off_state();
+
+  void set_as_off_go_signal();
+
+  void set_as_on_go_signal();
 
   /**
    * @brief Contructor for the RosCan class

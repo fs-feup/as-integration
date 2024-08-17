@@ -143,7 +143,7 @@
  * ID used for accelerations
  * from Bosch IMU
  */
-#define IMU_ANG_VEL 0x179
+#define IMU_ORIENTATION 0x179
 
 // -------------- SENSORS CONSTANTS --------------
 

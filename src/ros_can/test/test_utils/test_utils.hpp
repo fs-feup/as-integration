@@ -47,6 +47,7 @@ protected:
     control_command_->steering = 0.1;
 
     ros_can_->set_as_driving_state();
+    ros_can_->set_as_on_go_signal();
   }
 
   /**
