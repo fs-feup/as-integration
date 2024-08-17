@@ -44,7 +44,7 @@ private:
 
   // IMU Data Publishers
   rclcpp::Publisher<custom_interfaces::msg::ImuAcceleration>::SharedPtr imu_acc_pub_; ///< Publisher for IMU acceleration data
-  rclcpp::Publisher<custom_interfaces::msg::YawPitchRoll>::SharedPtr imu_orientation_pub_; ///< Publisher for IMU orientation data
+  rclcpp::Publisher<custom_interfaces::msg::YawPitchRoll>::SharedPtr imu_angular_velocity_pub_; ///< Publisher for IMU angular velocity data
 
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF; ///< Current operational state of the vehicle
@@ -122,7 +122,7 @@ private:
    * @brief Receives IMU orientation from CAN and publishes them to ROS.
    * @param msg CAN message data
    */
-  void imu_orientation_publisher(const unsigned char msg[8]);
+  void imu_angluar_velocity_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Publishes the steering angle from Cubemars steering actuator. 
@@ -273,7 +273,8 @@ public:
   FRIEND_TEST(RosCanTest, ControlCallbackLowerSteering);
   FRIEND_TEST(RosCanTest, ControlCallbackHigherSteering);
   FRIEND_TEST(RosCanTest, PublishControlCallback);
-  FRIEND_TEST(RosCanTest, TestImuYawAccYPublisher);
+  FRIEND_TEST(RosCanTest, TestImuAccPublisher);
+  FRIEND_TEST(RosCanTest, TestImuGyroPublisher);
   FRIEND_TEST(RosCanTest, TestCanInterpreterMasterStatusMission);
   FRIEND_TEST(RosCanTest, TestCanInterpreter_TEENSY_C1_RR_RPM_CODE);
   FRIEND_TEST(RosCanTest, TestOutOfRangeUpperSteeringThrottle);

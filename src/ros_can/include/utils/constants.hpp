@@ -143,7 +143,7 @@
  * ID used for accelerations
  * from Bosch IMU
  */
-#define IMU_ORIENTATION 0x179
+#define IMU_GYRO 0x179
 
 // -------------- SENSORS CONSTANTS --------------
 
@@ -160,7 +160,17 @@
 #define QUANTIZATION_GYRO (0.01)
 
 
+/**
+ * IMU Acceleration Ranges
+ */
+#define IMU_ACC_MIN_RANGE (-48.9988064)
+#define IMU_ACC_MAX_RANGE (48.9988064)
 
+/**
+ * IMU Gyroscope Ranges
+ */
+#define IMU_GYRO_MIN_RANGE (-300.0)
+#define IMU_GYRO_MAX_RANGE (300.0)
 
 
 // -------------- SAFETY CONSTANTS --------------
@@ -171,6 +181,12 @@
 */
 #define BOSCH_SA_INITIAL_CRC 0xff
 #define BOSCH_SA_CRC_POLYNOMIAL 0x2f
+
+/**
+ * Checksum for IMU
+ */
+#define CRC8_SAE_J1850_INITIAL_CRC 0xFF
+#define CRC8_SAE_J1850_POLYNOMIAL 0x1D
 
 /**
  * Limits for the throttle and steering angle

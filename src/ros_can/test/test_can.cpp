@@ -141,7 +141,7 @@ TEST_F(RosCanTest, MissionFinishedCallback) {
  * and verify them.
  */
 
-TEST_F(RosCanTest, TestImuYawAccYPublisher) {
+TEST_F(RosCanTest, TestImuAccPublisher) {
   unsigned char msg[8] = {0x80, 0x00, 0x00, 0x00, 0xFF, 0xFE, 0x00, 0x00};
   long id = IMU_ACC;
   unsigned int dlc = 8;
@@ -156,12 +156,40 @@ TEST_F(RosCanTest, TestImuYawAccYPublisher) {
                                testing::SetArgPointee<5>(time), testing::Return(canOK)))
       .WillRepeatedly(testing::Return(canERR_NOMSG));
   
-  auto imuYawAccYSub = test_node_->create_subscription<custom_interfaces::msg::ImuAcceleration>(
+  auto imuAcc = test_node_->create_subscription<custom_interfaces::msg::ImuAcceleration>(
       "/vehicle/acceleration", 10, [&](const custom_interfaces::msg::ImuAcceleration::SharedPtr msg) {
         const double tolerance = 0.001;
         EXPECT_NEAR(msg->acc_x, 0.0, tolerance);
         EXPECT_NEAR(msg->acc_y, -64.278, tolerance);
         EXPECT_NEAR(msg->acc_z, 64.274, tolerance);
+      });
+
+    ros_can_->can_sniffer();
+
+  rclcpp::spin_some(test_node_);
+}
+
+TEST_F(RosCanTest, TestImuGyroPublisher) {
+  unsigned char msg[8] = {0x80, 0x00, 0x0A, 0xD0, 0xF5, 0x30, 0x00, 0x00};
+  long id = IMU_GYRO;
+  unsigned int dlc = 8;
+  unsigned int flag = 0;
+  unsigned long time = 0;
+
+  EXPECT_CALL(*mock_can_lib_wrapper_,
+              canRead(testing::_, testing::_, testing::_, testing::_, testing::_, testing::_))
+      .Times(2)
+      .WillOnce(testing::DoAll(testing::SetArgPointee<1>(id), SetArg2ToUnsignedChar(msg),
+                               testing::SetArgPointee<3>(dlc), testing::SetArgPointee<4>(flag),
+                               testing::SetArgPointee<5>(time), testing::Return(canOK)))
+      .WillRepeatedly(testing::Return(canERR_NOMSG));
+  
+  auto imuGyro = test_node_->create_subscription<custom_interfaces::msg::YawPitchRoll>(
+      "/vehicle/angular_velocity", 10, [&](const custom_interfaces::msg::YawPitchRoll::SharedPtr msg) {
+        const double tolerance = 0.001;
+        EXPECT_NEAR(msg->yaw, 300.0, tolerance);
+        EXPECT_NEAR(msg->pitch, -300.0, tolerance);
+        EXPECT_NEAR(msg->roll, 0.0, tolerance);
       });
 
     ros_can_->can_sniffer();

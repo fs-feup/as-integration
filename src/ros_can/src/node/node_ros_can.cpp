@@ -23,7 +23,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   rr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rr_rpm", 10);
   motor_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/motor_rpm", 10);
   imu_acc_pub_ = this->create_publisher<custom_interfaces::msg::ImuAcceleration>("/vehicle/acceleration", 10);
-  imu_orientation_pub_ = this->create_publisher<custom_interfaces::msg::YawPitchRoll>("/vehicle/orientation", 10);
+  imu_angular_velocity_pub_ = this->create_publisher<custom_interfaces::msg::YawPitchRoll>("/vehicle/angular_velocity", 10);
   bosch_steering_angle_publisher_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
       "/vehicle/bosch_steering_angle", 10);
 
@@ -299,8 +299,8 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
       break;
     }
 
-    case IMU_ORIENTATION: {
-      imu_orientation_publisher(msg);
+    case IMU_GYRO: {
+      imu_angluar_velocity_publisher(msg);
       break;
     }
 
@@ -390,6 +390,12 @@ void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
     return;
   }
 
+  if (!calculateCRC8_SAE_J1850(msg)) {
+    RCLCPP_WARN(this->get_logger(),
+                "Invalid CRC8 received from IMU Acc; dumping message...");
+    return;
+  }
+
   float acc_x = ((msg[0] << 8 | msg[1]) - 0X8000) * QUANTIZATION_ACC;
   float acc_y = ((msg[2] << 8 | msg[3]) - 0X8000) * QUANTIZATION_ACC;
   float acc_z = ((msg[4] << 8 | msg[5]) - 0X8000) * QUANTIZATION_ACC;
@@ -400,17 +406,20 @@ void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
   message.acc_y = acc_y;
   message.acc_z = acc_z;
 
-  // RCLCPP_DEBUG(this->get_logger(),
-  //              "Received IMU Acc: Acc X: %f --- Acc Y: %f --- Acc Z: %f", message.acc_x,
-  //              message.acc_y, message.acc_z);
   imu_acc_pub_->publish(message);
 }
 
-void RosCan::imu_orientation_publisher(const unsigned char msg[8]) {
+void RosCan::imu_angluar_velocity_publisher(const unsigned char msg[8]) {
 
   if ((msg[6] & 0b11110000) != 0){
     RCLCPP_WARN(this->get_logger(), 
       "Invalid Signal");
+    return;
+  }
+
+  if (!calculateCRC8_SAE_J1850(msg)) {
+    RCLCPP_WARN(this->get_logger(),
+                "Invalid CRC8 received from IMU Angular Velocity; dumping message...");
     return;
   }
 
@@ -424,10 +433,7 @@ void RosCan::imu_orientation_publisher(const unsigned char msg[8]) {
   message.pitch = pitch;
   message.yaw = yaw;
 
-  // RCLCPP_DEBUG(this->get_logger(),
-              //  "Received IMU Angular Velocities: Yaw: %f --- Pitch: %f --- Roll: %f", yaw,
-              //  pitch, roll);
-  imu_orientation_pub_->publish(message);
+  imu_angular_velocity_pub_->publish(message);
 }
 
 // Used only to initially set actuator origin
