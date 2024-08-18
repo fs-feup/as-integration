@@ -45,9 +45,7 @@ protected:
         std::make_shared<custom_interfaces::msg::ControlCommand>();
     control_command_->throttle = 0;
     control_command_->steering = 0.1;
-
-    ros_can_->set_as_driving_state();
-    ros_can_->set_as_on_go_signal();
+    ros_can_->go_signal_ = true;
   }
 
   /**

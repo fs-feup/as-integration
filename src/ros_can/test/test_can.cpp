@@ -266,7 +266,7 @@ TEST_F(RosCanTest, TestCanInterpreter_TEENSY_C1_RR_RPM_CODE) {
  * throttle commands to the CAN bus.
  */
 TEST_F(RosCanTest, TestCarStateMustBeDriving) {
-    ros_can_->set_as_off_go_signal();
+  ros_can_->go_signal_ = false;
   long steering_id = STEERING_COMMAND_CUBEM_ID;
   EXPECT_CALL(*mock_can_lib_wrapper_,
               canWrite(testing::_, steering_id, testing::_, testing::_, testing::_))

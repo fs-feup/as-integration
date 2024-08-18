@@ -240,33 +240,13 @@ private:
   void bosch_steering_angle_set_origin();
 
 public:
-  /**
-   * @brief public function that sets the current_state_ to AS_DRIVING, helpful for testing
-   */
-  void set_as_driving_state();
-
-  /**
-   * @brief public function that sets the current_state_ to AS_OFF, helpful for testing
-   */
-  void set_as_off_state();
-
-  /**
-   * @brief Public function that turns off the "Go" signal, helpful for testing
-   * 
-   */
-  void set_as_off_go_signal();
-
-  /**
-   * @brief Public function that turns on the "Go" signal, helpful for testing
-   * 
-   */
-  void set_as_on_go_signal();
 
   /**
    * @brief Contructor for the RosCan class
    */
   RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param);
 
+  friend class RosCanTest;
   FRIEND_TEST(RosCanTest, ControlCallback);
   FRIEND_TEST(RosCanTest, ControlCallbackLowerThrottle);
   FRIEND_TEST(RosCanTest, ControlCallbackHigherThrottle);

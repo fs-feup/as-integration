@@ -516,16 +516,6 @@ void RosCan::rl_rpm_publisher(const unsigned char msg[8]) {
   rl_rpm_pub_->publish(message);
 }
 
-/**
- * @brief public function that sets the current_state_ to AS_DRIVING, helpful for testing
- */
-void RosCan::set_as_driving_state() { current_state_ = State::AS_DRIVING; }
-
-/**
- * @brief public function that sets the current_state_ to AS_OFF, helpful for testing
- */
-void RosCan::set_as_off_state() { current_state_ = State::AS_OFF; }
-
 void RosCan::battery_voltage_callback(const unsigned char msg[8]) {
   this->battery_voltage_ = (msg[2] << 8) | msg[1];
   // RCLCPP_DEBUG(this->get_logger(), "Received voltage from Bamocar: %d", this->battery_voltage_);
@@ -539,13 +529,4 @@ void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
   message.rr_rpm = this->motor_speed_ * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE;
   // RCLCPP_DEBUG(this->get_logger(), "Received motor speed from Bamocar: %d", this->motor_speed_);
   motor_rpm_pub_->publish(message);
-}
-
-
-void RosCan::set_as_off_go_signal(){
-  this->go_signal_ = false;
-}
-
-void RosCan::set_as_on_go_signal(){
-  this->go_signal_ = true;
 }
