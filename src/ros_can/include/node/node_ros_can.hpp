@@ -48,8 +48,8 @@ private:
 
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF; ///< Current operational state of the vehicle
-  int battery_voltage_ = 0; ///< Battery voltage in volts
-  int motor_speed_ = 0; ///< Motor speed in RPM
+  int battery_voltage_ = 0; ///< Battery voltage in volts, in Bamocar scale
+  int motor_speed_ = 0; ///< Motor speed in RPM, in Bamocar scale
   int hydraulic_line_pressure_ = 0; ///< Hydraulic line pressure
   double steering_angle_ = 0.0; ///< Steering angle in radians
 
@@ -122,7 +122,7 @@ private:
    * @brief Receives IMU orientation from CAN and publishes them to ROS.
    * @param msg CAN message data
    */
-  void imu_angluar_velocity_publisher(const unsigned char msg[8]);
+  void imu_angular_velocity_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Publishes the steering angle from Cubemars steering actuator. 

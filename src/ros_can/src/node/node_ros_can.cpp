@@ -300,7 +300,7 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
     }
 
     case IMU_GYRO: {
-      imu_angluar_velocity_publisher(msg);
+      imu_angular_velocity_publisher(msg);
       break;
     }
 
@@ -409,7 +409,7 @@ void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
   imu_acc_pub_->publish(message);
 }
 
-void RosCan::imu_angluar_velocity_publisher(const unsigned char msg[8]) {
+void RosCan::imu_angular_velocity_publisher(const unsigned char msg[8]) {
 
   if ((msg[6] & 0b11110000) != 0){
     RCLCPP_WARN(this->get_logger(), 
