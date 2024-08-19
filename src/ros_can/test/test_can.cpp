@@ -169,6 +169,11 @@ TEST_F(RosCanTest, TestImuAccPublisher) {
   rclcpp::spin_some(test_node_);
 }
 
+/**
+ * @test This test checks if the IMU gyroscope readings from can are correctly published to the
+ * correct ROS TOPIC, the test node is used to subscribe to the respective topic and read the values
+ * and verify them.
+ */
 TEST_F(RosCanTest, TestImuGyroPublisher) {
   unsigned char msg[8] = {0x80, 0x00, 0x0A, 0xD0, 0xF5, 0x30, 0x00, 0x00};
   long id = IMU_GYRO;

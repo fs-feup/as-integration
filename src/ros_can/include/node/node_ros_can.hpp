@@ -16,6 +16,7 @@
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/imu_acceleration.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
+#include "custom_interfaces/msg/hydraulic_line_pressure.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 /**
@@ -41,6 +42,10 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr motor_rpm_pub_; ///< Publisher for motor RPM
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_; ///< Publisher for Bosch steering angle
+
+  rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
+      hydraulic_line_pressure_publisher_; ///< Publisher for hydraulic line pressure
+
 
   // IMU Data Publishers
   rclcpp::Publisher<custom_interfaces::msg::ImuAcceleration>::SharedPtr imu_acc_pub_; ///< Publisher for IMU acceleration data

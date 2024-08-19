@@ -26,6 +26,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   imu_angular_velocity_pub_ = this->create_publisher<custom_interfaces::msg::YawPitchRoll>("/vehicle/angular_velocity", 10);
   bosch_steering_angle_publisher_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
       "/vehicle/bosch_steering_angle", 10);
+  hydraulic_line_pressure_publisher_ = this->create_publisher<custom_interfaces::msg::HydraulicLinePressure>(
+      "/vehicle/hydraulic_line_pressure", 10);
 
   // Subscritpions
   control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
@@ -309,6 +311,9 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
         rr_rpm_publisher(msg);
       } else if (msg[0] == TEENSY_C1_RL_RPM_CODE) {
         rl_rpm_publisher(msg);
+      } 
+      else if (msg[0] == HYDRAULIC_LINE) {
+        hydraulic_line_callback(msg);
       }
       break;
     }
@@ -529,4 +534,14 @@ void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
   message.rr_rpm = this->motor_speed_ * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE;
   // RCLCPP_DEBUG(this->get_logger(), "Received motor speed from Bamocar: %d", this->motor_speed_);
   motor_rpm_pub_->publish(message);
+}
+
+void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
+  int hydraulic_line_pressure = (msg[2] << 8) | msg[1];
+  
+  auto message = custom_interfaces::msg::HydraulicLinePressure();
+  message.header.stamp = this->get_clock()->now();
+  message.pressure = hydraulic_line_pressure;
+
+  hydraulic_line_pressure_publisher_->publish(message);
 }

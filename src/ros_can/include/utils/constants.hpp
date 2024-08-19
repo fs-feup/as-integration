@@ -82,6 +82,12 @@
 #define TEENSY_C1 0x123
 
 /**
+ * ID used for
+ * Hydraulic line pressure
+ */
+#define HYDRAULIC_LINE 0x90
+
+/**
  * ID used for:
  * Setting the origin of the steering motor
  * FORMAT: 
