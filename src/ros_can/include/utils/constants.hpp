@@ -200,7 +200,7 @@
 #define THROTTLE_UPPER_LIMIT 1.0 // Input Limits
 #define THROTTLE_LOWER_LIMIT -1.0 // Input Limits
 #define BAMOCAR_MAX_RPM 6500
-#define BAMOCAR_MAX_CURRENT 1000
+#define BAMOCAR_MAX_CURRENT 73
 #define BAMOCAR_MAX_VOLTAGE 600
 #define BAMOCAR_MAX_SCALE 32767 // Max of the messages from the bamocar
 #define MAX_ACCUMULATOR_CHARGING_CURRENT 30 // In Amps, as per documentation
