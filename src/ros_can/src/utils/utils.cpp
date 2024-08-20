@@ -60,19 +60,19 @@ int transform_steering_angle_command(const double wheels_steering_angle,
   return 0;
 }
 
-// /**
-//  * @brief Converts the steering angle from sensor to wheel angle
-//  *
-//  * @param double actuator_steering_angle steering angle in degrees for the actuator
-//  * @param double wheels_steering_angle steering angle in radians at the wheels
-//  * @return int returns 0 if successful, 1 if error
+/**
+ * @brief Converts the steering angle from sensor to wheel angle
+ *
+ * @param double sensor_steering_angle steering angle in degrees from the sensor
+ * @param double wheels_steering_angle steering angle in radians at the wheels
+ * @return int returns 0 if successful, 1 if error
+*/
+int transform_steering_angle_reading(const double sensor_steering_angle, double
+                                     &wheels_steering_angle) {
 
-// */
-// int transform_steering_angle_reading(const double actuator_steering_angle, double
-// &wheels_steering_angle) {
+    double m = 0.203820182;
+    double b = 5.1114e-16;
 
-//     double delta_x_average = actuator_steering_angle / (2 * M_PI / 87.9);
-
-//     // TODO(antónio): função reversa
-//     return 0;
-// }
+    wheels_steering_angle = (m * sensor_steering_angle + b) * M_PI / 180;
+    return 0;
+}

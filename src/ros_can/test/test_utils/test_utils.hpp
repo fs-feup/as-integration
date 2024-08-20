@@ -45,8 +45,7 @@ protected:
         std::make_shared<custom_interfaces::msg::ControlCommand>();
     control_command_->throttle = 0;
     control_command_->steering = 0.1;
-
-    ros_can_->set_as_driving_state();
+    ros_can_->go_signal_ = true;
   }
 
   /**
@@ -66,7 +65,7 @@ protected:
    * @param steering The steering value.
    * @param expectedCalls number o0f calls expect for each canWrite function.
    */
-  void prepare_out_of_range_values(float throttle, float steering,
+  void prepare_control_publish_values(float throttle, float steering,
                                    int expectedCalls) {
     control_command_->throttle = throttle;
     control_command_->steering = steering;

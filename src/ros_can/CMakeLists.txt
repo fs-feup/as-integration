@@ -38,7 +38,7 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gmock REQUIRED)
 
   set(TESTFILES
-          #test/test_can.cpp
+    test/test_can.cpp
   )
 
   include_directories(test)  # Include the 'test' directory for your test targets

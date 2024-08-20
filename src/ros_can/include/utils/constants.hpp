@@ -82,6 +82,12 @@
 #define TEENSY_C1 0x123
 
 /**
+ * ID used for
+ * Hydraulic line pressure
+ */
+#define HYDRAULIC_LINE 0x90
+
+/**
  * ID used for:
  * Setting the origin of the steering motor
  * FORMAT: 
@@ -143,7 +149,7 @@
  * ID used for accelerations
  * from Bosch IMU
  */
-#define IMU_ANG_VEL 0x179
+#define IMU_GYRO 0x179
 
 // -------------- SENSORS CONSTANTS --------------
 
@@ -160,7 +166,17 @@
 #define QUANTIZATION_GYRO (0.01)
 
 
+/**
+ * IMU Acceleration Ranges
+ */
+#define IMU_ACC_MIN_RANGE (-48.9988064)
+#define IMU_ACC_MAX_RANGE (48.9988064)
 
+/**
+ * IMU Gyroscope Ranges
+ */
+#define IMU_GYRO_MIN_RANGE (-300.0)
+#define IMU_GYRO_MAX_RANGE (300.0)
 
 
 // -------------- SAFETY CONSTANTS --------------
@@ -173,14 +189,21 @@
 #define BOSCH_SA_CRC_POLYNOMIAL 0x2f
 
 /**
+ * Checksum for IMU
+ */
+#define CRC8_SAE_J1850_INITIAL_CRC 0xFF
+#define CRC8_SAE_J1850_POLYNOMIAL 0x1D
+
+/**
  * Limits for the throttle and steering angle
 */
 #define THROTTLE_UPPER_LIMIT 1.0 // Input Limits
 #define THROTTLE_LOWER_LIMIT -1.0 // Input Limits
 #define BAMOCAR_MAX_RPM 6500
-#define BAMOCAR_MAX_CURRENT 1000
+#define BAMOCAR_MAX_CURRENT 73
 #define BAMOCAR_MAX_VOLTAGE 600
 #define BAMOCAR_MAX_SCALE 32767 // Max of the messages from the bamocar
+#define MAX_ACCUMULATOR_CHARGING_CURRENT 30 // In Amps, as per documentation
 
 #define STEERING_UPPER_LIMIT 0.392699 // Input Limits
 #define STEERING_LOWER_LIMIT -0.392699 // Input Limits
