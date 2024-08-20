@@ -494,10 +494,13 @@ void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
   angle = angle * M_PI / 180;
   this->steering_angle_ = -angle;  // Used for initial adjustment
 
+  double steering_angle_wheels;
+  transform_steering_angle_reading(this->steering_angle_, steering_angle_wheels);
+
   // Send message
   auto message = custom_interfaces::msg::SteeringAngle();
   message.header.stamp = this->get_clock()->now();
-  message.steering_angle = this->steering_angle_;
+  message.steering_angle = steering_angle_wheels;
   message.steering_speed = speed;
   // RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (radians): %f", this->steering_angle_);
   bosch_steering_angle_publisher_->publish(message);

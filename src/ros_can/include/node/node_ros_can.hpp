@@ -42,7 +42,6 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr motor_rpm_pub_; ///< Publisher for motor RPM
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_; ///< Publisher for Bosch steering angle
-
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
       hydraulic_line_pressure_publisher_; ///< Publisher for hydraulic line pressure
 
@@ -56,7 +55,7 @@ private:
   int battery_voltage_ = 0; ///< Battery voltage in volts, in Bamocar scale
   int motor_speed_ = 0; ///< Motor speed in RPM, in Bamocar scale
   int hydraulic_line_pressure_ = 0; ///< Hydraulic line pressure
-  double steering_angle_ = 0.0; ///< Steering angle in radians
+  double steering_angle_ = 0.0; ///< Steering angle in radians (steering column)
 
   std::shared_ptr<ICanLibWrapper> can_lib_wrapper_; ///< Wrapper for CAN library
 
