@@ -432,11 +432,6 @@ void RosCan::imu_angular_velocity_publisher(const unsigned char msg[8]) {
   float pitch = ((msg[2] << 8| msg[3]) - 0x8000) * QUANTIZATION_GYRO;
   float yaw = ((msg[4] << 8 | msg[5]) - 0x8000) * QUANTIZATION_GYRO;
 
-  if ((msg[4] << 8 | msg[5]) >= 0xFFF8h){
-    RCLCPP_WARN(this->get_logger(),
-                "Yaw part is over the physical range");
-  }
-
   auto message = custom_interfaces::msg::YawPitchRoll();
   message.header.stamp = this->get_clock()->now();
   message.roll = roll;
