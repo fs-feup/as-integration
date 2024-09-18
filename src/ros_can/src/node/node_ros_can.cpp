@@ -491,7 +491,7 @@ void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
 
   // RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (degrees): %f", angle);
   speed = speed * M_PI / 180;
-  angle = angle * M_PI / 180;
+  angle = angle * M_PI /180;
   this->steering_angle_ = -angle;  // Used for initial adjustment
 
   double steering_angle_wheels;

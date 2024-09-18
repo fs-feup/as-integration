@@ -73,6 +73,6 @@ int transform_steering_angle_reading(const double sensor_steering_angle, double
     double m = 0.203820182;
     double b = 5.1114e-16;
 
-    wheels_steering_angle = (m * sensor_steering_angle + b) * M_PI / 180;
+    wheels_steering_angle = (m * sensor_steering_angle + b);
     return 0;
 }
