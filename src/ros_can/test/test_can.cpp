@@ -58,7 +58,7 @@ TEST_F(RosCanTest, ControlCallbackHigherSteering) {
  * 
  */
 TEST_F(RosCanTest, TestOutOfRangeUpperSteeringThrottle) {
-  prepare_control_publish_values(STEERING_UPPER_LIMIT + 1, STEERING_UPPER_LIMIT + 1, 0);
+  prepare_control_publish_values(1.4, STEERING_UPPER_LIMIT + 1, 0);
   ros_can_->control_callback(control_command_);
 }
 
@@ -68,18 +68,17 @@ TEST_F(RosCanTest, TestOutOfRangeUpperSteeringThrottle) {
  * 
  */
 TEST_F(RosCanTest, TestOutOfRangeLowerSteeringThrottle) {
-  prepare_control_publish_values(STEERING_LOWER_LIMIT - 1, STEERING_LOWER_LIMIT - 1, 0);
+  prepare_control_publish_values(-0.7, STEERING_LOWER_LIMIT - 1, 0);
   ros_can_->control_callback(control_command_);
 }
 
 
 /**
- * @test This test represesnts the case where the steering ot the throttle violates the expected limits (Higher and Lower Value). 
+ * @test This test represents the case where the steering and the throttle violates the expected limits (Higher and Lower Value). 
  * Expected message to not be written to CAN
- * 
  */
 TEST_F(RosCanTest, TestOutOfRangeSingleSteeringThrottle) {
-  prepare_control_publish_values(STEERING_UPPER_LIMIT - 1, STEERING_UPPER_LIMIT + 1, 0);
+  prepare_control_publish_values(-0.7, STEERING_UPPER_LIMIT + 1, 0);
   ros_can_->control_callback(control_command_);
 }
 
