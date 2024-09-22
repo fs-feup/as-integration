@@ -389,17 +389,11 @@ void RosCan::op_status_publisher() {
 
 void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
 
-  //if ((msg[6] & 0b11110000) != 0){
-  //  RCLCPP_WARN(this->get_logger(), 
-  //    "Invalid Signal");
-  //  return;
-  //}
-
-  //if (!calculateCRC8_SAE_J1850(msg)) {
-  //  RCLCPP_WARN(this->get_logger(),
-  //              "Invalid CRC8 received from IMU Acc; dumping message...");
-  //  return;
-  //}
+  if ((msg[6] & 0b11110000) != 0){
+    RCLCPP_WARN(this->get_logger(), 
+      "Invalid Signal");
+    return;
+  }
 
   float acc_x = ((msg[0] << 8 | msg[1]) - 0X8000) * QUANTIZATION_ACC;
   float acc_y = ((msg[2] << 8 | msg[3]) - 0X8000) * QUANTIZATION_ACC;
