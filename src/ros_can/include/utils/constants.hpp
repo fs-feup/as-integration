@@ -58,7 +58,10 @@
 */
 #define BAMOCAR_MOTOR_SPEED_CODE 0x30
 
-
+/*
+ * Messager code that publish cmds to bamocar
+ */
+#define TORQUE_COMMAND_BAMO_BYTE 0x90
 
 
 
@@ -77,6 +80,12 @@
  * Left wheel rpm
  */
 #define TEENSY_C1 0x123
+
+/**
+ * ID used for
+ * Hydraulic line pressure
+ */
+#define HYDRAULIC_LINE 0x90
 
 /**
  * ID used for:
@@ -130,54 +139,44 @@
  */
 #define BAMO_COMMAND_ID 0x201
 
-/*
- * ID used for:
- * Publish cmds to bamocar
+/**
+ * ID used for accelerations
+ * from Bosch IMU
  */
-#define TORQUE_COMMAND_BAMO_BYTE 0x90
+#define IMU_ACC 0x175
 
-/*
- * ID used from the IMU for:
- * yaw rate
- * acceleration in y
+/**
+ * ID used for accelerations
+ * from Bosch IMU
  */
-#define IMU_YAW_RATE_ACC_Y_ID 0x175
-
-/*
- * ID used from the IMU for:
- * roll rate
- * acceleration in x
- */
-#define IMU_ROLL_RATE_ACC_X_ID 0x179 
-
-/*
- * ID used from the IMU for:
- * pitch rate
- * acceleration in z
- */
-#define IMU_PITCH_RATE_ACC_Z_ID 0x17C
-
-
-
-
-
+#define IMU_GYRO 0x179
 
 // -------------- SENSORS CONSTANTS --------------
 
 /*
  * Quantization for the acceleration
- * g/digit
+ * m/s²/digit
  */
-#define QUANTIZATION_ACC 0.0001274
+#define QUANTIZATION_ACC (0.0019616)
 
 /*
  * Quantization for the gyro
- * degree/s/digit
+ * rad/s/digit
  */
-#define QUANTIZATION_GYRO 0.005
+#define QUANTIZATION_GYRO (0.01)
 
 
+/**
+ * IMU Acceleration Ranges
+ */
+#define IMU_ACC_MIN_RANGE (-48.9988064)
+#define IMU_ACC_MAX_RANGE (48.9988064)
 
+/**
+ * IMU Gyroscope Ranges
+ */
+#define IMU_GYRO_MIN_RANGE (-300.0)
+#define IMU_GYRO_MAX_RANGE (300.0)
 
 
 // -------------- SAFETY CONSTANTS --------------
@@ -190,14 +189,21 @@
 #define BOSCH_SA_CRC_POLYNOMIAL 0x2f
 
 /**
+ * Checksum for IMU
+ */
+#define CRC8_SAE_J1850_INITIAL_CRC 0xFF
+#define CRC8_SAE_J1850_POLYNOMIAL 0x1D
+
+/**
  * Limits for the throttle and steering angle
 */
 #define THROTTLE_UPPER_LIMIT 1.0 // Input Limits
 #define THROTTLE_LOWER_LIMIT -1.0 // Input Limits
 #define BAMOCAR_MAX_RPM 6500
-#define BAMOCAR_MAX_CURRENT 1000
+#define BAMOCAR_MAX_CURRENT 73
 #define BAMOCAR_MAX_VOLTAGE 600
 #define BAMOCAR_MAX_SCALE 32767 // Max of the messages from the bamocar
+#define MAX_ACCUMULATOR_CHARGING_CURRENT 30 // In Amps, as per documentation
 
 #define STEERING_UPPER_LIMIT 0.392699 // Input Limits
 #define STEERING_LOWER_LIMIT -0.392699 // Input Limits
