@@ -40,6 +40,7 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rl_rpm_pub_; ///< Publisher for rear left wheel RPM
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr rr_rpm_pub_; ///< Publisher for rear right wheel RPM
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr motor_rpm_pub_; ///< Publisher for motor RPM
+  rclcpp::Publisher<int>::SharedPtr motor_temp_pub_; ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_; ///< Publisher for Bosch steering angle
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
@@ -54,6 +55,7 @@ private:
   State current_state_ = State::AS_OFF; ///< Current operational state of the vehicle
   int battery_voltage_ = 0; ///< Battery voltage in volts, in Bamocar scale
   int motor_speed_ = 0; ///< Motor speed in RPM, in Bamocar scale
+  int motor_temp_adc_ = 0; ///< Motor temp in RPM, in Bamocar scale
   int hydraulic_line_pressure_ = 0; ///< Hydraulic line pressure
   double steering_angle_ = 0.0; ///< Steering angle in radians (steering column)
 

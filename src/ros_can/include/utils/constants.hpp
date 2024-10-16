@@ -13,6 +13,8 @@
  */
 #define MASTER_AS_MISSION_CODE 0x32
 
+
+#define MASTER_DBG_LOG_MSG 0x34
 /*
  * value of msg[0] for RR RPM Code
  */
@@ -57,6 +59,11 @@
  * Message code for Bamocar motor speed
 */
 #define BAMOCAR_MOTOR_SPEED_CODE 0x30
+
+/**
+ * Message code for Bamocar motor temperature
+*/
+#define BAMOCAR_MOTOR_TEMP_CODE 0x49
 
 /*
  * Messager code that publish cmds to bamocar
