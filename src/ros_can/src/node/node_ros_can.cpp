@@ -7,11 +7,13 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
+#include <std_msgs/msg/int32.hpp>
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
 #include "safety/safety-mechanisms.hpp"
 #include "utils/constants.hpp"
+#include "utils/temp_converters.hpp"
 #include "utils/utils.hpp"
 
 RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
@@ -25,7 +27,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   rr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rr_rpm", 10);
   motor_rpm_pub_ =
       this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/motor_rpm", 10);
-  motor_temp_pub_ = this->create_publisher<int>("/vehicle/motor_temp", 10);
+  motor_temp_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/motor_temp", 10);
   imu_acc_pub_ =
       this->create_publisher<custom_interfaces::msg::ImuAcceleration>("/vehicle/acceleration", 10);
   imu_angular_velocity_pub_ =
@@ -570,12 +572,11 @@ void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
   motor_rpm_pub_->publish(message);
 }
 void RosCan::motor_temp_publisher(const unsigned char msg[8]) {
-  this->motor_temp_adc_ = (msg[2] << 8) | msg[1];
-  // build temp message
-  //  RCLCPP_DEBUG(this->get_logger(), "Received motor temp from Bamocar: %d",
-  //  this->motor_temp_adc_);
-  // adc to temp conversion TBD
-  motor_temp_pub_->publish(this->motor_temp_adc_);
+  uint16_t motor_temp_adc_ = (msg[2] << 8) | msg[1];
+  this->motor_temp_ = Motor_Temperature_Converter().ADCToTemperature(motor_temp_adc_);
+  std_msgs::msg::Int32 motor_temp_msg;
+  motor_temp_msg.data = static_cast<int>(this->motor_temp_);
+  motor_temp_pub_->publish(motor_temp_msg);
 }
 void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
   int hydraulic_line_pressure = (msg[2] << 8) | msg[1];
