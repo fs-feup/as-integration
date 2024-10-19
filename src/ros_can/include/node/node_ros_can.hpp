@@ -42,8 +42,9 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
       rr_rpm_pub_;  ///< Publisher for rear right wheel RPM
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
-      motor_rpm_pub_;                                 ///< Publisher for motor RPM
-  rclcpp::Publisher<int>::SharedPtr motor_temp_pub_;  ///< Publisher for motor temp
+      motor_rpm_pub_;                                    ///< Publisher for motor RPM
+  rclcpp::Publisher<int>::SharedPtr motor_temp_pub_;     ///< Publisher for motor temp
+  rclcpp::Publisher<int>::SharedPtr inverter_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;  ///< Publisher for Bosch steering angle
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
@@ -59,7 +60,8 @@ private:
   State current_state_ = State::AS_OFF;  ///< Current operational state of the vehicle
   int battery_voltage_ = 0;              ///< Battery voltage in volts, in Bamocar scale
   int motor_speed_ = 0;                  ///< Motor speed in RPM, in Bamocar scale
-  int motor_temp_ = 0;                   ///< Motor temp in RPM, in Bamocar scale
+  int motor_temp_ = 0;                   ///< Motor temp
+  int inverter_temp_ = 0;                ///< Inverter temp
   int hydraulic_line_pressure_ = 0;      ///< Hydraulic line pressure
   double steering_angle_ = 0.0;          ///< Steering angle in radians (steering column)
 
@@ -175,6 +177,20 @@ private:
    * @param msg CAN message data
    */
   void motor_speed_publisher(const unsigned char msg[8]);
+
+  /**
+   * @brief Publishes the motor temp, received from bamocar, to ROS.
+   *
+   * @param msg CAN message data
+   */
+  void motor_temp_publisher(const unsigned char msg[8]);
+
+  /**
+   * @brief Publishes the inverter temp, received from bamocar, to ROS.
+   *
+   * @param msg CAN message data
+   */
+  void inverter_temp_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Publishes the battery voltage, received from BAMOCAR, to ROS.

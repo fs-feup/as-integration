@@ -13,7 +13,6 @@
  */
 #define MASTER_AS_MISSION_CODE 0x32
 
-
 #define MASTER_DBG_LOG_MSG 0x34
 /*
  * value of msg[0] for RR RPM Code
@@ -32,45 +31,45 @@
 
 /**
  * value of msg[0] for mission finished
-*/
+ */
 #define MISSION_FINISHED_CODE 0x42
 
 /**
  * value of msg[0] for emergency detected by AS CU
-*/
+ */
 #define EMERGENCY_CODE 0x43
 
 /**
  * Payload of the single byte message to reset the steering angle sensor
-*/
+ */
 #define SET_ORIGIN_BOSCH_STEERING_ANGLE_RESET 0x05
 
 /**
  * Payload of the single byte message to set the steering angle sensor origin
-*/
+ */
 #define SET_ORIGIN_BOSCH_STEERING_ANGLE_SET 0x03
 
 /**
  * Message code for Bamocar battery voltage
-*/
+ */
 #define BAMOCAR_BATTERY_VOLTAGE_CODE 0xeb
 
 /**
  * Message code for Bamocar motor speed
-*/
+ */
 #define BAMOCAR_MOTOR_SPEED_CODE 0x30
 
 /**
  * Message code for Bamocar motor temperature
-*/
+ */
 #define BAMOCAR_MOTOR_TEMP_CODE 0x49
+
+#define BAMOCAR_INVERTER_TEMP_CODE 0x4a
 
 /*
  * Messager code that publish cmds to bamocar
  */
 #define TORQUE_COMMAND_BAMO_BYTE 0x90
-
-
 
 // -------------- MESAGE IDs --------------
 
@@ -97,19 +96,19 @@
 /**
  * ID used for:
  * Setting the origin of the steering motor
- * FORMAT: 
+ * FORMAT:
  * - 0x5: command mode (5 for setting origin)
  * - 5d: controller id (set in upper computer cubemars application)
-*/
+ */
 #define SET_ORIGIN_CUBEM_ID 0x55d
 
 /**
  * ID used for:
  * Sending steering motor angle position command (in degrees)
- * FORMAT: 
+ * FORMAT:
  * - 0x4: command mode (4 for position mode)
  * - 5d: controller id (set in upper computer cubemars application)
-*/
+ */
 #define STEERING_COMMAND_CUBEM_ID 0x45d
 
 /*
@@ -127,18 +126,18 @@
 /**
  * ID used for:
  * Setting the origin of the steering angle sensor
-*/
+ */
 #define SET_ORIGIN_BOSCH_STEERING_ANGLE_ID 0x725
 
 /**
  * ID used for:
  * Receiving information from the BAMOCAR
-*/
+ */
 #define BAMO_RESPONSE_ID 0x181
 
 /**
  * ID used for AS_CU messages
-*/
+ */
 #define AS_CU_NODE_ID 0x400
 
 /* ID used for:
@@ -172,7 +171,6 @@
  */
 #define QUANTIZATION_GYRO (0.01)
 
-
 /**
  * IMU Acceleration Ranges
  */
@@ -185,13 +183,12 @@
 #define IMU_GYRO_MIN_RANGE (-300.0)
 #define IMU_GYRO_MAX_RANGE (300.0)
 
-
 // -------------- SAFETY CONSTANTS --------------
 
 // TODO: these values can be obtained through CAN communication
 /**
  * Checksum for steering angle sensor
-*/
+ */
 #define BOSCH_SA_INITIAL_CRC 0xff
 #define BOSCH_SA_CRC_POLYNOMIAL 0x2f
 
@@ -203,19 +200,18 @@
 
 /**
  * Limits for the throttle and steering angle
-*/
-#define THROTTLE_UPPER_LIMIT 1.0 // Input Limits
-#define THROTTLE_LOWER_LIMIT -1.0 // Input Limits
+ */
+#define THROTTLE_UPPER_LIMIT 1.0   // Input Limits
+#define THROTTLE_LOWER_LIMIT -1.0  // Input Limits
 #define BAMOCAR_MAX_RPM 6500
 #define BAMOCAR_MAX_CURRENT 73
 #define BAMOCAR_MAX_VOLTAGE 600
-#define BAMOCAR_MAX_SCALE 32767 // Max of the messages from the bamocar
-#define MAX_ACCUMULATOR_CHARGING_CURRENT 30 // In Amps, as per documentation
+#define BAMOCAR_MAX_SCALE 32767              // Max of the messages from the bamocar
+#define MAX_ACCUMULATOR_CHARGING_CURRENT 30  // In Amps, as per documentation
 
-#define STEERING_UPPER_LIMIT 0.392699 // Input Limits
-#define STEERING_LOWER_LIMIT -0.392699 // Input Limits
-#define STEERING_UPPER_LIMIT_HEX_CHAR 0x11 // Limit for buffer[1] value
-#define STEERING_LOWER_LIMIT_HEX_CHAR 0xee // Limit for buffer[1] value
+#define STEERING_UPPER_LIMIT 0.392699       // Input Limits
+#define STEERING_LOWER_LIMIT -0.392699      // Input Limits
+#define STEERING_UPPER_LIMIT_HEX_CHAR 0x11  // Limit for buffer[1] value
+#define STEERING_LOWER_LIMIT_HEX_CHAR 0xee  // Limit for buffer[1] value
 
-
-#endif // CONSTANTS_HPP
+#endif  // CONSTANTS_HPP

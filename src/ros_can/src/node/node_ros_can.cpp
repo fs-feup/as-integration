@@ -28,6 +28,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   motor_rpm_pub_ =
       this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/motor_rpm", 10);
   motor_temp_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/motor_temp", 10);
+  inverter_temp_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/inverter_temp", 10);
   imu_acc_pub_ =
       this->create_publisher<custom_interfaces::msg::ImuAcceleration>("/vehicle/acceleration", 10);
   imu_angular_velocity_pub_ =
@@ -354,6 +355,10 @@ void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
       motor_temp_publisher(msg);
       break;
     }
+    case BAMOCAR_INVERTER_TEMP_CODE: {
+      inverter_temp_publisher(msg);
+      break;
+    }
     default:
       break;
   }
@@ -577,6 +582,13 @@ void RosCan::motor_temp_publisher(const unsigned char msg[8]) {
   std_msgs::msg::Int32 motor_temp_msg;
   motor_temp_msg.data = static_cast<int>(this->motor_temp_);
   motor_temp_pub_->publish(motor_temp_msg);
+}
+void RosCan::inverter_temp_publisher(const unsigned char msg[8]) {
+  uint16_t inverter_temp_adc_ = (msg[2] << 8) | msg[1];
+  this->inverter_temp_ = Inverter_Temperature_Converter().ADCToTemperature(inverter_temp_adc_);
+  std_msgs::msg::Int32 inverter_temp_msg;
+  inverter_temp_msg.data = static_cast<int>(this->inverter_temp_);
+  inverter_temp_pub_->publish(inverter_temp_msg);
 }
 void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
   int hydraulic_line_pressure = (msg[2] << 8) | msg[1];

@@ -12,7 +12,6 @@ public:
   }
 
 private:
-  // consts from datasheet
   std::map<float, float> resistance_to_temperature_lut_{
       {980, -55},  {1030, -50}, {1135, -40}, {1190, -35}, {1247, -30}, {1367, -20}, {1430, -15},
       {1495, -10}, {1561, -5},  {1630, 0},   {1700, 5},   {1772, 10},  {1846, 15},  {1922, 20},
@@ -23,4 +22,18 @@ private:
 
   const float kSeriesResistance_{4700.0f};
   const float kADCMax_{1 << 15};  // 32768
+};
+
+class Inverter_Temperature_Converter {
+public:
+  float ADCToTemperature(float ADC) { return interpolate(adc_to_temperature_lut_, ADC); }
+
+private:
+  std::map<float, float> adc_to_temperature_lut_{
+      {28480, 125}, {28179, 120}, {27851, 115}, {27497, 110}, {27114, 105}, {26702, 100},
+      {26261, 95},  {25792, 90},  {25296, 85},  {24775, 80},  {24232, 75},  {23671, 70},
+      {23097, 65},  {22515, 60},  {21933, 55},  {21357, 50},  {20793, 45},  {20250, 40},
+      {19733, 35},  {19247, 30},  {18797, 25},  {18387, 20},  {18017, 15},  {17688, 10},
+      {17400, 5},   {17151, 0},   {16938, -5},  {16757, -10}, {16609, -15}, {16487, -20},
+      {16387, -25}, {16308, -30}};
 };
