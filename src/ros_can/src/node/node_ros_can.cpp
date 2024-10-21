@@ -578,16 +578,16 @@ void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
 }
 void RosCan::motor_temp_publisher(const unsigned char msg[8]) {
   uint16_t motor_temp_adc_ = (msg[2] << 8) | msg[1];
-  this->motor_temp_ = Motor_Temperature_Converter().ADCToTemperature(motor_temp_adc_);
+  this->motor_temp_ = MotorTemperatureConverter().adc_to_temperature(motor_temp_adc_);
   std_msgs::msg::Int32 motor_temp_msg;
-  motor_temp_msg.data = static_cast<int>(this->motor_temp_);
+  motor_temp_msg.data = this->motor_temp_;
   motor_temp_pub_->publish(motor_temp_msg);
 }
 void RosCan::inverter_temp_publisher(const unsigned char msg[8]) {
   uint16_t inverter_temp_adc_ = (msg[2] << 8) | msg[1];
-  this->inverter_temp_ = Inverter_Temperature_Converter().ADCToTemperature(inverter_temp_adc_);
+  this->inverter_temp_ = InverterTemperatureConverter().adc_to_temperature(inverter_temp_adc_);
   std_msgs::msg::Int32 inverter_temp_msg;
-  inverter_temp_msg.data = static_cast<int>(this->inverter_temp_);
+  inverter_temp_msg.data = this->inverter_temp_;
   inverter_temp_pub_->publish(inverter_temp_msg);
 }
 void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {

@@ -77,7 +77,7 @@ int transform_steering_angle_reading(const double sensor_steering_angle,
 }
 
 float interpolate(const std::map<float, float>& look_up_table, float resistance) {
-  typedef std::map<float, float>::const_iterator iterator;
+  using iterator = std::map<float, float>::const_iterator;
   iterator ub = map.upper_bound(x);
   if (ub == map.end()) {
     return (--ub)->second;

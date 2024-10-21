@@ -1,12 +1,11 @@
 #pragma once
 #include <map>
 
-class Motor_Temperature_Converter {  // could not be a class if memory problems
+class MotorTemperatureConverter {  // could not be a class if memory problems
 public:
-  float ADCToTemperature(uint16_t ADC) {
-    // Conversion eq: R1(resistance) * (1 - ADC/ADCMax) = R2(series_resistance)*ADC/ADCMax
-    float rhs = kSeriesResistance * ADC / kADCMax;
-    float lhs = 1 - (ADC / kADCMax);
+  float adc_to_temperature(uint16_t adc) {
+    float rhs = series_resistance_ * adc / adc_max_;
+    float lhs = 1 - (adc / adc_max_);
     float resistance = rhs / lhs;
     return interpolate(resistance_to_temperature_lut_, resistance);
   }
@@ -20,13 +19,13 @@ private:
       {3286, 95},  {3392, 100}, {3499, 105}, {3607, 110}, {3714, 115}, {3817, 120}, {3915, 125},
       {4008, 130}, {4092, 135}, {4166, 140}, {4230, 145}, {4280, 150}, {4316, 155}};
 
-  const float kSeriesResistance_{4700.0f};
-  const float kADCMax_{1 << 15};  // 32768
+  const float series_resistance_{4700.0f};
+  const float adc_max_{1 << 15};  // 32768
 };
 
-class Inverter_Temperature_Converter {
+class InverterTemperatureConverter {
 public:
-  float ADCToTemperature(float ADC) { return interpolate(adc_to_temperature_lut_, ADC); }
+  float adc_to_temperature(float adc) { return interpolate(adc_to_temperature_lut_, adc); }
 
 private:
   std::map<float, float> adc_to_temperature_lut_{
