@@ -42,9 +42,12 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
       rr_rpm_pub_;  ///< Publisher for rear right wheel RPM
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
-      motor_rpm_pub_;                                    ///< Publisher for motor RPM
-  rclcpp::Publisher<int>::SharedPtr motor_temp_pub_;     ///< Publisher for motor temp
-  rclcpp::Publisher<int>::SharedPtr inverter_temp_pub_;  ///< Publisher for motor temp
+      motor_rpm_pub_;  ///< Publisher for motor RPM
+  rclcpp::Publisher<custom_interfaces::msg::MaserLog>::SharedPtr
+      master_log_pub_;                                                 ///< Publisher for master log
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr motor_temp_pub_;  ///< Publisher for motor temp
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
+      inverter_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;  ///< Publisher for Bosch steering angle
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr

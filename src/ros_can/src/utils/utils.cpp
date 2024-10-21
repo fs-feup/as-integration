@@ -3,6 +3,8 @@
 //
 #include "utils/utils.hpp"
 
+#include <cmath>
+#include <map>
 /**
  * @brief Creates buffer from steering angle for Cubemars
  * actuator position command
@@ -78,7 +80,7 @@ int transform_steering_angle_reading(const double sensor_steering_angle,
 
 float interpolate(const std::map<float, float>& look_up_table, float resistance) {
   using iterator = std::map<float, float>::const_iterator;
-  iterator ub = map.upper_bound(x);
+  iterator ub = map.upper_bound(resistance);
   if (ub == map.end()) {
     return (--ub)->second;
   }
@@ -87,6 +89,7 @@ float interpolate(const std::map<float, float>& look_up_table, float resistance)
   }
   iterator lb = ub;
   lb--;
-  const float delta = (x - lb->first) / (ub->first - lb->first);
-  return std::lerp(lb->second, ub->second, delta);  // delta * ub->second + (1 - delta) * lb->second
+  const float delta = (resistance - lb->first) / (ub->first - lb->first);
+  return delta * ub->second + (1 - delta) * lb->second;  // std::lerp(lb->second, ub->second,
+                                                         // delta);
 }

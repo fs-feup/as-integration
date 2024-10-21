@@ -1,6 +1,8 @@
 #pragma once
 #include <map>
 
+#include "utils/utils.hpp"
+
 class MotorTemperatureConverter {  // could not be a class if memory problems
 public:
   float adc_to_temperature(uint16_t adc) {
