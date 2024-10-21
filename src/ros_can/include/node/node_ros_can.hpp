@@ -63,6 +63,7 @@ private:
   rclcpp::Subscription<custom_interfaces::msg::ControlCommand>::SharedPtr control_listener_; ///< Subscription for control commands
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr emergency_service_; ///< Service for emergency handling
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr mission_finished_service_;  ///< Service for mission status updates
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr bosch_steering_angle_reset_service_;  ///< Service for mission status updates
   rclcpp::TimerBase::SharedPtr timer_; ///< Timer for periodic tasks
   rclcpp::TimerBase::SharedPtr timer_alive_msg_; ///< Timer for sending alive messages
 
@@ -206,6 +207,15 @@ private:
   void mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
                                  std::shared_ptr<std_srvs::srv::Trigger::Response> response);
 
+    /**
+   * @brief Handles the request to reset the steering angle value from the Bosch sensor.
+   * 
+   * @param request Service request
+   * @param response Service response
+   */
+  void bosch_sa_reset_callack(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+                                 std::shared_ptr<std_srvs::srv::Trigger::Response> response);
+
   /**
    * @brief Handles the control command message callback.
    * 
@@ -240,8 +250,10 @@ private:
   /**
    * @brief Sets the current position as the Bosch steering angle origin (permanent)
    * @note This function is not currently used as it is meant to be used only once
+   * 
+   * @return 0 on success, otherwise on failure
    */
-  void bosch_steering_angle_set_origin();
+  int bosch_steering_angle_set_origin();
 
 public:
 
