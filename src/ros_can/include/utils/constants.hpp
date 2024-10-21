@@ -62,9 +62,14 @@
 /**
  * Message code for Bamocar motor temperature
  */
-#define BAMOCAR_MOTOR_TEMP_CODE 0x49
+// constexpr auto BAMOCAR_MOTOR_TEMP_CODE 0x49;
+#define BAMOCAR_MOTOR_TEMP_CODE 0x49;
 
-#define BAMOCAR_INVERTER_TEMP_CODE 0x4a
+/**
+ * Message code for Bamocar motor temperature
+ */
+// constexpr auto BAMOCAR_INVERTER_TEMP_CODE 0x4a;
+#define BAMOCAR_INVERTER_TEMP_CODE 0x4a;
 
 /*
  * Messager code that publish cmds to bamocar
