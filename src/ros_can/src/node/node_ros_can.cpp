@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <std_msgs/msg/int32.hpp>
 #include <string>
 
 #include "rclcpp/rclcpp.hpp"
@@ -27,8 +26,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   rr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rr_rpm", 10);
   motor_rpm_pub_ =
       this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/motor_rpm", 10);
-  motor_temp_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/motor_temp", 10);
-  inverter_temp_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/inverter_temp", 10);
+  motor_temp_pub_ = this->create_publisher<custom_interfaces::msg::Temperature>("/vehicle/motor_temp", 10);
+  inverter_temp_pub_ = this->create_publisher<custom_interfaces::msg::Temperature>("/vehicle/inverter_temp", 10);
   imu_acc_pub_ =
       this->create_publisher<custom_interfaces::msg::ImuAcceleration>("/vehicle/acceleration", 10);
   imu_angular_velocity_pub_ =
@@ -400,18 +399,18 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       bool sdc_open = (msg[6] >> 5) & 0x01;
 
       custom_interfaces::msg::MasterLog log_message;
-      log_message.hydraulicPressure = hydraulic_pressure;
-      log_message.emergencySignal = emergency_signal;
-      log_message.pneumaticLinePressure = pneumatic_line_pressure;
-      log_message.engageEbsCheck = engage_ebs_check;
-      log_message.realeaseEbsCheck = realease_ebs_check;
-      log_message.steerDead = steer_dead;
-      log_message.pcDead = pc_dead;
-      log_message.inversorDead = inversor_dead;
-      log_message.resDead = res_dead;
-      log_message.asmsOn = asms_on;
-      log_message.tsOn = ts_on;
-      log_message.sdcOpen = sdc_open;
+      log_message.hydraulic_pressure = hydraulic_pressure;
+      log_message.emergency_signal = emergency_signal;
+      log_message.pneumatic_line_pressure = pneumatic_line_pressure;
+      log_message.engage_ebs_check = engage_ebs_check;
+      log_message.realease_ebs_check = realease_ebs_check;
+      log_message.steer_dead = steer_dead;
+      log_message.pc_dead = pc_dead;
+      log_message.inversor_dead = inversor_dead;
+      log_message.res_dead = res_dead;
+      log_message.asms_on = asms_on;
+      log_message.ts_on = ts_on;
+      log_message.sdc_open = sdc_open;
 
       master_log_pub_->publish(log_message);
       break;
@@ -579,15 +578,17 @@ void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
 void RosCan::motor_temp_publisher(const unsigned char msg[8]) {
   uint16_t motor_temp_adc_ = (msg[2] << 8) | msg[1];
   this->motor_temp_ = MotorTemperatureConverter().adc_to_temperature(motor_temp_adc_);
-  std_msgs::msg::Int32 motor_temp_msg;
-  motor_temp_msg.data = this->motor_temp_;
+  auto motor_temp_msg = custom_interfaces::msg::Temperature();
+  motor_temp_msg.header.stamp = this->get_clock()->now();
+  motor_temp_msg.temperature = this->motor_temp_;
   motor_temp_pub_->publish(motor_temp_msg);
 }
 void RosCan::inverter_temp_publisher(const unsigned char msg[8]) {
   uint16_t inverter_temp_adc_ = (msg[2] << 8) | msg[1];
   this->inverter_temp_ = InverterTemperatureConverter().adc_to_temperature(inverter_temp_adc_);
-  std_msgs::msg::Int32 inverter_temp_msg;
-  inverter_temp_msg.data = this->inverter_temp_;
+  auto inverter_temp_msg = custom_interfaces::msg::Temperature();
+  inverter_temp_msg.header.stamp = this->get_clock()->now();
+  inverter_temp_msg.temperature = this->inverter_temp_  ;
   inverter_temp_pub_->publish(inverter_temp_msg);
 }
 void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {

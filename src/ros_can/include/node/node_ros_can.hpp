@@ -8,6 +8,7 @@
 #include <string>
 #include <std_msgs/Int32.h>
 
+
 #include "canlib_wrappers/ican_lib_wrapper.hpp"
 #include "custom_interfaces/msg/control_command.hpp"
 #include "custom_interfaces/msg/hydraulic_line_pressure.hpp"
@@ -18,6 +19,8 @@
 #include "custom_interfaces/msg/steering_angle.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
+#include "custom_interfaces/msg/master_log.hpp"
+#include "custom_interfaces/msg/temperature.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 /**
@@ -46,8 +49,8 @@ private:
       motor_rpm_pub_;  ///< Publisher for motor RPM
   rclcpp::Publisher<custom_interfaces::msg::MasterLog>::SharedPtr
       master_log_pub_;                                                 ///< Publisher for master log
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr motor_temp_pub_;  ///< Publisher for motor temp
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
+  rclcpp::Publisher<custom_interfaces::msg::Temperature>::SharedPtr motor_temp_pub_;  ///< Publisher for motor temp
+  rclcpp::Publisher<custom_interfaces::msg::Temperature>::SharedPtr
       inverter_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;  ///< Publisher for Bosch steering angle
