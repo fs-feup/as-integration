@@ -400,18 +400,18 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       bool sdc_open = (msg[6] >> 5) & 0x01;
 
       custom_interfaces::msg::MasterLog log_message;
-      custom_msg.hydraulicPressure = hydraulic_pressure;
-      custom_msg.emergencySignal = emergency_signal;
-      custom_msg.pneumaticLinePressure = pneumatic_line_pressure;
-      custom_msg.engageEbsCheck = engage_ebs_check;
-      custom_msg.realeaseEbsCheck = realease_ebs_check;
-      custom_msg.steerDead = steer_dead;
-      custom_msg.pcDead = pc_dead;
-      custom_msg.inversorDead = inversor_dead;
-      custom_msg.resDead = res_dead;
-      custom_msg.asmsOn = asms_on;
-      custom_msg.tsOn = ts_on;
-      custom_msg.sdcOpen = sdc_open;
+      log_message.hydraulicPressure = hydraulic_pressure;
+      log_message.emergencySignal = emergency_signal;
+      log_message.pneumaticLinePressure = pneumatic_line_pressure;
+      log_message.engageEbsCheck = engage_ebs_check;
+      log_message.realeaseEbsCheck = realease_ebs_check;
+      log_message.steerDead = steer_dead;
+      log_message.pcDead = pc_dead;
+      log_message.inversorDead = inversor_dead;
+      log_message.resDead = res_dead;
+      log_message.asmsOn = asms_on;
+      log_message.tsOn = ts_on;
+      log_message.sdcOpen = sdc_open;
 
       master_log_pub_->publish(log_message);
       break;

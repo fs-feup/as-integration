@@ -43,7 +43,7 @@ private:
       rr_rpm_pub_;  ///< Publisher for rear right wheel RPM
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
       motor_rpm_pub_;  ///< Publisher for motor RPM
-  rclcpp::Publisher<custom_interfaces::msg::MaserLog>::SharedPtr
+  rclcpp::Publisher<custom_interfaces::msg::MasterLog>::SharedPtr
       master_log_pub_;                                                 ///< Publisher for master log
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr motor_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
