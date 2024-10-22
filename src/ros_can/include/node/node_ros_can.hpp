@@ -6,6 +6,7 @@
 #include <memory>
 #include <std_srvs/srv/trigger.hpp>
 #include <string>
+#include <std_msgs/Int32.h>
 
 #include "canlib_wrappers/ican_lib_wrapper.hpp"
 #include "custom_interfaces/msg/control_command.hpp"
