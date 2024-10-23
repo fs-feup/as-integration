@@ -398,6 +398,7 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       bool asms_on = (msg[6] >> 7) & 0x01;
       bool ts_on = (msg[6] >> 6) & 0x01;
       bool sdc_open = (msg[6] >> 5) & 0x01;
+      uint8_t mission = msg[7];
 
       custom_interfaces::msg::MasterLog log_message;
       custom_msg.hydraulicPressure = hydraulic_pressure;
@@ -412,6 +413,7 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       custom_msg.asmsOn = asms_on;
       custom_msg.tsOn = ts_on;
       custom_msg.sdcOpen = sdc_open;
+      custom_msg.mission = mission;
 
       master_log_pub_->publish(log_message);
       break;
