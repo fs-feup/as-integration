@@ -399,6 +399,7 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       bool asms_on = (msg[6] >> 7) & 0x01;
       bool ts_on = (msg[6] >> 6) & 0x01;
       bool sdc_open = (msg[6] >> 5) & 0x01;
+      uint8_t checkup_state = (msg[6]) & 0x0F;
       uint8_t mission = msg[7] & 0x0F;
       uint8_t master_state = (msg[7] >> 4) & 0x0F;
 
@@ -417,6 +418,7 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       log_message.sdc_open = sdc_open;
       log_message.mission = mission;
       log_message.master_state = master_state;
+      log_message.checkup_state = checkup_state;
 
       master_log_pub_->publish(log_message);
       break;
