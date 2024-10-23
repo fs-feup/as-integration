@@ -22,6 +22,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       "/vehicle/operational_status", 10);
   master_log_pub_ =
       this->create_publisher<custom_interfaces::msg::MasterLog>("/vehicle/master_log", 10);
+  master_log_pub_2_ =
+      this->create_publisher<custom_interfaces::msg::MasterLog2>("/vehicle/master_log_2", 10);
   rl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rl_rpm", 10);
   rr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rr_rpm", 10);
   motor_rpm_pub_ =
@@ -421,6 +423,14 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       log_message.checkup_state = checkup_state;
 
       master_log_pub_->publish(log_message);
+      break;
+    }
+    case MASTER_DBG_LOG_MSG_2: {
+      uint32_t dc_voltage = (msg[1] << 24) | (msg[2] << 16) | (msg[3] << 8) | msg[4];
+      custom_interfaces::msg::MasterLog2 log_message_2;
+      log_message_2.dc_voltage = dc_voltage;
+
+      master_log_pub_2_->publish(log_message_2);
       break;
     }
     default:

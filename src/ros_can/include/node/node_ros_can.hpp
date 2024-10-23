@@ -1,13 +1,12 @@
 #include <canlib.h>
 #include <gtest/gtest_prod.h>
+#include <std_msgs/Int32.h>
 
 #include <chrono>
 #include <functional>
 #include <memory>
 #include <std_srvs/srv/trigger.hpp>
 #include <string>
-#include <std_msgs/Int32.h>
-
 
 #include "canlib_wrappers/ican_lib_wrapper.hpp"
 #include "custom_interfaces/msg/control_command.hpp"
@@ -15,12 +14,12 @@
 #include "custom_interfaces/msg/imu.hpp"
 #include "custom_interfaces/msg/imu_acceleration.hpp"
 #include "custom_interfaces/msg/imu_data.hpp"
+#include "custom_interfaces/msg/master_log.hpp"
 #include "custom_interfaces/msg/operational_status.hpp"
 #include "custom_interfaces/msg/steering_angle.hpp"
+#include "custom_interfaces/msg/temperature.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
-#include "custom_interfaces/msg/master_log.hpp"
-#include "custom_interfaces/msg/temperature.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 /**
@@ -48,8 +47,10 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
       motor_rpm_pub_;  ///< Publisher for motor RPM
   rclcpp::Publisher<custom_interfaces::msg::MasterLog>::SharedPtr
-      master_log_pub_;                                                 ///< Publisher for master log
-  rclcpp::Publisher<custom_interfaces::msg::Temperature>::SharedPtr motor_temp_pub_;  ///< Publisher for motor temp
+      master_log_pub_;  ///< Publisher for master log
+  rclcpp::Publisher<custom_interfaces::msg::MasterLog2>::SharedPtr master_log_pub_2_;
+  rclcpp::Publisher<custom_interfaces::msg::Temperature>::SharedPtr
+      motor_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::Temperature>::SharedPtr
       inverter_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr

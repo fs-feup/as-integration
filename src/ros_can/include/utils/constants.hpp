@@ -14,6 +14,9 @@
 #define MASTER_AS_MISSION_CODE 0x32
 
 #define MASTER_DBG_LOG_MSG 0x34
+
+#define MASTER_DBG_LOG_MSG_2 0x35
+
 /*
  * value of msg[0] for RR RPM Code
  */
