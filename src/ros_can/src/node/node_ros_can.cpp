@@ -427,8 +427,13 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
     }
     case MASTER_DBG_LOG_MSG_2: {
       uint32_t dc_voltage = (msg[1] << 24) | (msg[2] << 16) | (msg[3] << 8) | msg[4];
+      bool pneumatic1 = msg[5] & 0x01;
+      bool pneumatic2 = msg[6] & 0x01;
       custom_interfaces::msg::MasterLog2 log_message_2;
       log_message_2.dc_voltage = dc_voltage;
+      log_message_2.pneumatic1 = pneumatic1;
+      log_message_2.pneumatic2 = pneumatic2;
+
 
       master_log_pub_2_->publish(log_message_2);
       break;

@@ -15,6 +15,7 @@
 #include "custom_interfaces/msg/imu_acceleration.hpp"
 #include "custom_interfaces/msg/imu_data.hpp"
 #include "custom_interfaces/msg/master_log.hpp"
+#include "custom_interfaces/msg/master_log2.hpp"
 #include "custom_interfaces/msg/operational_status.hpp"
 #include "custom_interfaces/msg/steering_angle.hpp"
 #include "custom_interfaces/msg/temperature.hpp"
