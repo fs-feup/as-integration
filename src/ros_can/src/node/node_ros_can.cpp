@@ -115,6 +115,8 @@ void RosCan::send_steering_control(double steering_angle_command) {
   unsigned int steering_dlc = 4;
   unsigned int flag = canMSG_EXT;  // Steering motor used CAN Extended
 
+  
+
   // Write the steering message to the CAN bus
   // DO NOT EVER EDIT THIS CODE BLOCK
   // CODE BLOCK START
@@ -376,7 +378,8 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       if (msg[1] == 3) {  // If AS State == Driving
         // Fix initial actuator angle
         if (this->go_signal_ == 0) {
-          this->send_steering_control(-this->steering_angle_);
+          RCLCPP_INFO(this->get_logger(), "Setting steering");
+          //this->send_steering_control(-this->steering_angle_);
           this->cubem_set_origin();
         }
         this->go_signal_ = 1;
