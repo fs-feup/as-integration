@@ -379,7 +379,7 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
         // Fix initial actuator angle
         if (this->go_signal_ == 0) {
           RCLCPP_INFO(this->get_logger(), "Setting steering");
-          //this->send_steering_control(-this->steering_angle_);
+          this->send_steering_control(-this->steering_angle_);
           this->cubem_set_origin();
         }
         this->go_signal_ = 1;
