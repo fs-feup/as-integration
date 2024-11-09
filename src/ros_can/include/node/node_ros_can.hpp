@@ -84,7 +84,7 @@ private:
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr
       mission_finished_service_;  ///< Service for mission status updates
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr
-      bosch_steering_angle_reset_service_;        ///< Service for mission status updates
+      bosch_steering_angle_reset_service_;        ///< Service for reset bosch steering angle
   rclcpp::TimerBase::SharedPtr timer_;            ///< Timer for periodic tasks
   rclcpp::TimerBase::SharedPtr timer_alive_msg_;  ///< Timer for sending alive messages
 
@@ -223,6 +223,20 @@ private:
    * @param msg CAN message data
    */
   void can_interpreter_master_status(const unsigned char msg[8]);
+
+  /**
+   * @brief Publishes master log data.
+   *
+   * @param msg CAN message data
+   */
+  void master_logs_publisher(const unsigned char msg[8]);
+
+  /**
+   * @brief Publishes master log second message data.
+   *
+   * @param msg CAN message data
+   */
+  void master_logs_2_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Handles the emergency service callback.

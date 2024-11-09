@@ -56,7 +56,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
 
   bosch_steering_angle_reset_service_ = this->create_service<std_srvs::srv::Trigger>(
       "/as_srv/bosch_sa_reset", std::bind(&RosCan::bosch_sa_reset_callack, this,
-                                            std::placeholders::_1, std::placeholders::_2));
+                                          std::placeholders::_1, std::placeholders::_2));
 
   // Timers
   timer_ = this->create_wall_timer(std::chrono::microseconds(500),
@@ -125,8 +125,6 @@ void RosCan::send_steering_control(double steering_angle_command) {
   void *steering_requestData = static_cast<void *>(buffer_steering);
   unsigned int steering_dlc = 4;
   unsigned int flag = canMSG_EXT;  // Steering motor used CAN Extended
-
-  
 
   // Write the steering message to the CAN bus
   // DO NOT EVER EDIT THIS CODE BLOCK
@@ -219,7 +217,7 @@ void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trig
 }
 
 void RosCan::bosch_sa_reset_callack(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
-                                       std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+                                    std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
   // Handle request
   RCLCPP_DEBUG(this->get_logger(), "Received steering angle reset request.");
 
@@ -394,12 +392,6 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
   switch (msg[0]) {
     case MASTER_AS_STATE_CODE: {
       if (msg[1] == 3) {  // If AS State == Driving
-        // Fix initial actuator angle
-        if (this->go_signal_ == 0) {
-          RCLCPP_INFO(this->get_logger(), "Setting steering");
-          this->send_steering_control(-this->steering_angle_);
-          this->cubem_set_origin();
-        }
         this->go_signal_ = 1;
       } else {
         this->go_signal_ = 0;
@@ -413,58 +405,65 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       break;
     }
     case MASTER_DBG_LOG_MSG: {
-      uint32_t hydraulic_pressure = (msg[1] << 24) | (msg[2] << 16) | (msg[3] << 8) | msg[4];
-      bool emergency_signal = (msg[5] >> 7) & 0x01;
-      bool pneumatic_line_pressure = (msg[5] >> 6) & 0x01;
-      bool engage_ebs_check = (msg[5] >> 5) & 0x01;
-      bool realease_ebs_check = (msg[5] >> 4) & 0x01;
-      bool steer_dead = (msg[5] >> 3) & 0x01;
-      bool pc_dead = (msg[5] >> 2) & 0x01;
-      bool inversor_dead = (msg[5] >> 1) & 0x01;
-      bool res_dead = msg[5] & 0x01;
-      bool asms_on = (msg[6] >> 7) & 0x01;
-      bool ts_on = (msg[6] >> 6) & 0x01;
-      bool sdc_open = (msg[6] >> 5) & 0x01;
-      uint8_t checkup_state = (msg[6]) & 0x0F;
-      uint8_t mission = msg[7] & 0x0F;
-      uint8_t master_state = (msg[7] >> 4) & 0x0F;
-
-      custom_interfaces::msg::MasterLog log_message;
-      log_message.hydraulic_pressure = hydraulic_pressure;
-      log_message.emergency_signal = emergency_signal;
-      log_message.pneumatic_line_pressure = pneumatic_line_pressure;
-      log_message.engage_ebs_check = engage_ebs_check;
-      log_message.realease_ebs_check = realease_ebs_check;
-      log_message.steer_dead = steer_dead;
-      log_message.pc_dead = pc_dead;
-      log_message.inversor_dead = inversor_dead;
-      log_message.res_dead = res_dead;
-      log_message.asms_on = asms_on;
-      log_message.ts_on = ts_on;
-      log_message.sdc_open = sdc_open;
-      log_message.mission = mission;
-      log_message.master_state = master_state;
-      log_message.checkup_state = checkup_state;
-
-      master_log_pub_->publish(log_message);
+      this->master_logs_publisher(msg);
       break;
     }
     case MASTER_DBG_LOG_MSG_2: {
-      uint32_t dc_voltage = (msg[1] << 24) | (msg[2] << 16) | (msg[3] << 8) | msg[4];
-      bool pneumatic1 = msg[5] & 0x01;
-      bool pneumatic2 = msg[6] & 0x01;
-      custom_interfaces::msg::MasterLog2 log_message_2;
-      log_message_2.dc_voltage = dc_voltage;
-      //log_message_2.pneumatic1 = pneumatic1;
-      //log_message_2.pneumatic2 = pneumatic2;
-
-
-      master_log_pub_2_->publish(log_message_2);
+      this->master_logs_2_publisher(msg);
       break;
     }
     default:
       break;  // add error message
   }
+}
+
+void RosCan::master_logs_publisher(const unsigned char msg[8]) {
+  uint32_t hydraulic_pressure = (msg[1] << 24) | (msg[2] << 16) | (msg[3] << 8) | msg[4];
+  bool emergency_signal = (msg[5] >> 7) & 0x01;
+  bool pneumatic_line_pressure = (msg[5] >> 6) & 0x01;
+  bool engage_ebs_check = (msg[5] >> 5) & 0x01;
+  bool realease_ebs_check = (msg[5] >> 4) & 0x01;
+  bool steer_dead = (msg[5] >> 3) & 0x01;
+  bool pc_dead = (msg[5] >> 2) & 0x01;
+  bool inversor_dead = (msg[5] >> 1) & 0x01;
+  bool res_dead = msg[5] & 0x01;
+  bool asms_on = (msg[6] >> 7) & 0x01;
+  bool ts_on = (msg[6] >> 6) & 0x01;
+  bool sdc_open = (msg[6] >> 5) & 0x01;
+  uint8_t checkup_state = (msg[6]) & 0x0F;
+  uint8_t mission = msg[7] & 0x0F;
+  uint8_t master_state = (msg[7] >> 4) & 0x0F;
+
+  custom_interfaces::msg::MasterLog log_message;
+  log_message.hydraulic_pressure = hydraulic_pressure;
+  log_message.emergency_signal = emergency_signal;
+  log_message.pneumatic_line_pressure = pneumatic_line_pressure;
+  log_message.engage_ebs_check = engage_ebs_check;
+  log_message.realease_ebs_check = realease_ebs_check;
+  log_message.steer_dead = steer_dead;
+  log_message.pc_dead = pc_dead;
+  log_message.inversor_dead = inversor_dead;
+  log_message.res_dead = res_dead;
+  log_message.asms_on = asms_on;
+  log_message.ts_on = ts_on;
+  log_message.sdc_open = sdc_open;
+  log_message.mission = mission;
+  log_message.master_state = master_state;
+  log_message.checkup_state = checkup_state;
+
+  master_log_pub_->publish(log_message);
+}
+
+void RosCan::master_logs_2_publisher(const unsigned char msg[8]) {
+  uint32_t dc_voltage = (msg[1] << 24) | (msg[2] << 16) | (msg[3] << 8) | msg[4];
+  bool pneumatic1 = msg[5] & 0x01;
+  bool pneumatic2 = msg[6] & 0x01;
+  custom_interfaces::msg::MasterLog2 log_message_2;
+  log_message_2.dc_voltage = dc_voltage;
+  // log_message_2.pneumatic1 = pneumatic1;
+  // log_message_2.pneumatic2 = pneumatic2;
+
+  master_log_pub_2_->publish(log_message_2);
 }
 
 void RosCan::op_status_publisher() {
@@ -615,7 +614,7 @@ void RosCan::battery_voltage_callback(const unsigned char msg[8]) {
 
 void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
   short int temp_speed = (msg[2] << 8) | msg[1];
-  this->motor_speed_ = static_cast<int> (temp_speed);
+  this->motor_speed_ = static_cast<int>(temp_speed);
   auto message = custom_interfaces::msg::WheelRPM();
   message.header.stamp = this->get_clock()->now();
   message.rl_rpm = this->motor_speed_ * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE;
