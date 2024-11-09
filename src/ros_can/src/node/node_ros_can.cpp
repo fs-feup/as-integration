@@ -54,6 +54,10 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       "/as_srv/mission_finished", std::bind(&RosCan::mission_finished_callback, this,
                                             std::placeholders::_1, std::placeholders::_2));
 
+  bosch_steering_angle_reset_service_ = this->create_service<std_srvs::srv::Trigger>(
+      "/as_srv/bosch_sa_reset", std::bind(&RosCan::bosch_sa_reset_callack, this,
+                                            std::placeholders::_1, std::placeholders::_2));
+
   // Timers
   timer_ = this->create_wall_timer(std::chrono::microseconds(500),
                                    std::bind(&RosCan::can_sniffer, this));
@@ -121,6 +125,8 @@ void RosCan::send_steering_control(double steering_angle_command) {
   void *steering_requestData = static_cast<void *>(buffer_steering);
   unsigned int steering_dlc = 4;
   unsigned int flag = canMSG_EXT;  // Steering motor used CAN Extended
+
+  
 
   // Write the steering message to the CAN bus
   // DO NOT EVER EDIT THIS CODE BLOCK
@@ -212,6 +218,22 @@ void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trig
   }
 }
 
+void RosCan::bosch_sa_reset_callack(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+                                       std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
+  // Handle request
+  RCLCPP_DEBUG(this->get_logger(), "Received steering angle reset request.");
+
+  int result = this->bosch_steering_angle_set_origin();
+
+  if (result) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering angle sensor");
+    response->success = false;
+  } else {
+    RCLCPP_INFO(this->get_logger(), "Reset steering angle value!");
+    response->success = true;
+  }
+}
+
 void RosCan::alive_msg_callback() {
   long id = AS_CU_NODE_ID;
   unsigned char data = ALIVE_MESSAGE;
@@ -243,7 +265,7 @@ void RosCan::cubem_set_origin() {
 }
 
 // Not currently used, check header file for more info
-void RosCan::bosch_steering_angle_set_origin() {
+int RosCan::bosch_steering_angle_set_origin() {
   long id = SET_ORIGIN_BOSCH_STEERING_ANGLE_ID;
   char buffer[8] = {0};
   buffer[0] = SET_ORIGIN_BOSCH_STEERING_ANGLE_RESET;  // Reset message code
@@ -254,7 +276,7 @@ void RosCan::bosch_steering_angle_set_origin() {
   // Reset previous origin
   stat_ = canWrite(hnd_, id, request_data, dlc, flag);
   if (stat_ != canOK) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering angle sensor");
+    return 1;
   }
   sleep(2);  // Necessary for configuration to sink in
 
@@ -264,9 +286,10 @@ void RosCan::bosch_steering_angle_set_origin() {
   // Set new origin
   stat_ = canWrite(hnd_, id, request_data, dlc, flag);
   if (stat_ != canOK) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering angle sensor");
+    return 1;
   }
   sleep(2);  // Necessary for configuration to sink in
+  return 0;
 }
 
 /**
@@ -373,6 +396,7 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       if (msg[1] == 3) {  // If AS State == Driving
         // Fix initial actuator angle
         if (this->go_signal_ == 0) {
+          RCLCPP_INFO(this->get_logger(), "Setting steering");
           this->send_steering_control(-this->steering_angle_);
           this->cubem_set_origin();
         }
@@ -590,7 +614,8 @@ void RosCan::battery_voltage_callback(const unsigned char msg[8]) {
 }
 
 void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
-  this->motor_speed_ = (msg[2] << 8) | msg[1];
+  short int temp_speed = (msg[2] << 8) | msg[1];
+  this->motor_speed_ = static_cast<int> (temp_speed);
   auto message = custom_interfaces::msg::WheelRPM();
   message.header.stamp = this->get_clock()->now();
   message.rl_rpm = this->motor_speed_ * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE;
