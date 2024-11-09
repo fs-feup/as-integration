@@ -431,8 +431,8 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       bool pneumatic2 = msg[6] & 0x01;
       custom_interfaces::msg::MasterLog2 log_message_2;
       log_message_2.dc_voltage = dc_voltage;
-      log_message_2.pneumatic1 = pneumatic1;
-      log_message_2.pneumatic2 = pneumatic2;
+      //log_message_2.pneumatic1 = pneumatic1;
+      //log_message_2.pneumatic2 = pneumatic2;
 
 
       master_log_pub_2_->publish(log_message_2);
