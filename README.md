@@ -17,12 +17,6 @@ This repository holds the packages responsible for the interface between the AS 
 - [Kvaser CanLib and driver](https://www.kvaser.com/canlib-webhelp/index.html)
 - [bear](https://installati.one/install-bear-ubuntu-20-04/)
 
-### Submodules
-
-```sh
-git submodule update --init --recursive ./ext/interfaces
-```
-
 ## Compiling and Running
 
 ```sh
