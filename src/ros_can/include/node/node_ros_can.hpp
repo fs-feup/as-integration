@@ -56,6 +56,8 @@ private:
       inverter_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;  ///< Publisher for Bosch steering angle
+  rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
+    steering_motor_state_pub_;  ///< Publisher for Cubem Motor Steering angle
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
       hydraulic_line_pressure_publisher_;  ///< Publisher for hydraulic line pressure
 
