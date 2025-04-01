@@ -532,15 +532,6 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
     this->cubem_set_origin();
   }
 
-  // int angle = (msg[3] << 24) | (msg[2] << 16) | (msg[1] << 8) | msg[0];
-  // int speed = (msg[7] << 24) | (msg[6] << 16) | (msg[5] << 8) | msg[4];
-  // auto message = custom_interfaces::msg::SteeringAngle();
-  // message.header.stamp = this->get_clock()->now();
-  // message.steering_angle = static_cast<double>(angle) / 1000000;
-  // message.steering_speed = static_cast<double>(speed);
-  // RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %f",
-  // message.steering_angle);
-
   int angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
   int speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
 
