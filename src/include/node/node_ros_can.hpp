@@ -21,6 +21,10 @@
 #include "custom_interfaces/msg/temperature.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
+
+#include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/int8.hpp"
+
 #include "rclcpp/rclcpp.hpp"
 
 /**
@@ -56,8 +60,16 @@ private:
       inverter_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;  ///< Publisher for Bosch steering angle
+
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
-    steering_motor_state_pub_;  ///< Publisher for Cubem Motor Steering angle
+      steering_motor_state_pub_;  ///< Publisher for CubeM Motor Steering angle
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr 
+      steering_motor_current;  // Publisher for CubeMars motor current
+  rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr 
+      steering_motor_temperature;  // Publisher for Cube Mars Steering motor temperature
+  rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
+      steering_motor_error; // Publisher for steering motor error
+      
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
       hydraulic_line_pressure_publisher_;  ///< Publisher for hydraulic line pressure
 
