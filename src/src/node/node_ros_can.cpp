@@ -38,6 +38,16 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       this->create_publisher<custom_interfaces::msg::YawPitchRoll>("/vehicle/angular_velocity", 10);
   bosch_steering_angle_publisher_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
       "/vehicle/bosch_steering_angle", 10);
+
+  steering_motor_state_pub_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
+        "/vehicle/steering_motor_state", 10);
+  steering_motor_temperature = this->create_publisher<std_msgs::msg::Int8>(
+        "steering_motor_temperature", 10);
+  steering_motor_current = this->create_publisher<std_msgs::msg::Float64>(
+        "steering_motor_current", 10);
+  steering_motor_error = this->create_publisher<std_msgs::msg::Int8>(
+        "steering_motor_error", 10);
+
   hydraulic_line_pressure_publisher_ =
       this->create_publisher<custom_interfaces::msg::HydraulicLinePressure>(
           "/vehicle/hydraulic_line_pressure", 10);
@@ -530,15 +540,28 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
     this->cubem_set_origin();
   }
 
-  // TODO: fix this code
-  int angle = (msg[3] << 24) | (msg[2] << 16) | (msg[1] << 8) | msg[0];
-  int speed = (msg[7] << 24) | (msg[6] << 16) | (msg[5] << 8) | msg[4];
-  auto message = custom_interfaces::msg::SteeringAngle();
-  message.header.stamp = this->get_clock()->now();
-  message.steering_angle = static_cast<double>(angle) / 1000000;
-  message.steering_speed = static_cast<double>(speed);
-  // RCLCPP_DEBUG(this->get_logger(), "Cubemars steering angle received: %f",
-  // message.steering_angle);
+  int angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
+  int speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
+  int current = (msg[4] << 8) | msg[5]; // Extract 16-bit motor current
+  int temperature = msg[6]; // Extract 8-bit motor temperature
+  int error = msg[7];  // Extract 8-bit motor error
+
+  auto motor_message = custom_interfaces::msg::SteeringAngle();
+  motor_message.header.stamp = this->get_clock()->now();
+  motor_message.steering_angle = static_cast<double>(angle) * 0.1;  // Convert to degrees
+  motor_message.steering_speed = static_cast<double>(speed) * 10.0; // Convert to RPM
+
+  auto current_msg = std_msgs::msg::Float64();
+  auto temperature_msg = std_msgs::msg::Int8();
+  auto error_msg = std_msgs::msg::Int8();
+  current_msg.data = static_cast<double>(current) * 0.01; // Convert to Amperes
+  temperature_msg.data = static_cast<int8_t>(temperature); // Convert to int8
+  error_msg.data = static_cast<int8_t>(error); // Convert to int8
+
+  steering_motor_state_pub_->publish(motor_message);
+  steering_motor_current->publish(current_msg);
+  steering_motor_temperature->publish(temperature_msg);
+  steering_motor_error->publish(error_msg);
 }
 
 void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
