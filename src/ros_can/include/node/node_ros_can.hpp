@@ -166,7 +166,7 @@ private:
   /**
    * @brief Publishes the rear right RPM to ROS.
    * @param msg CAN message data
-   */
+   */create_steering_angle_command
   void rr_rpm_publisher(const unsigned char msg[8]);
 
   /**
