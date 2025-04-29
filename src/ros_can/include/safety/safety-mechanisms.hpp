@@ -12,6 +12,12 @@
 constexpr uint16_t STEERING_RAW_MIN = 0x7EC4;  // new limit for the new message type
 constexpr uint16_t STEERING_RAW_MAX = 0x81B3;  // new limit for the new message type
 
+/**
+  * @brief Checks if the steering angle is within the safe limits
+  * If not, the program will enter in fatal error
+  *
+  * @param steering_payload_data steering buffer
+  */
 void check_steering_safe(void *steering_payload_data) {
   auto *b = static_cast<unsigned char*>(steering_payload_data);
   uint16_t raw = (uint16_t(b[0]) << 8) | uint16_t(b[1]);
