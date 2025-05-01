@@ -69,7 +69,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   // A channel to a CAN circuit is opened. The channel depend on the hardware
   hnd_ = canOpenChannel(0, canOPEN_EXCLUSIVE);
   // Setup CAN parameters for the channel
-  stat_ = canSetBusParams(hnd_, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
+  stat_ = canSetBusParams(hnd_, canBITRATE_1M, 0, 0, 4, 0, 0);  // check these values later
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN parameters");
   }
