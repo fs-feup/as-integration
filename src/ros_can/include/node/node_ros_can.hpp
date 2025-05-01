@@ -89,8 +89,10 @@ private:
   rclcpp::TimerBase::SharedPtr timer_alive_msg_;  ///< Timer for sending alive messages
 
   canHandle hnd_;  ///< Handle to the CAN channel
+  canHandle hnd_2_;  ///< Handle to the second CAN channel
 
   canStatus stat_;  ///< Status of the last CANlib call
+  canStatus stat_2_;  ///< Status of the last CANlib call
 
   bool go_signal_ = false;  ///< Flag to control vehicle (false - stop/ true - go)
 
