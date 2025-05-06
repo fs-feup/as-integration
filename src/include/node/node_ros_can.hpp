@@ -318,6 +318,10 @@ private:
    */
   int bosch_steering_angle_set_origin();
 
+
+  
+  void pack_cmd(unsigned char *msg, float p_des, float v_des, float kp, float kd, float t_ff);
+
 public:
   /**
    * @brief Contructor for the RosCan class

@@ -42,11 +42,11 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   steering_motor_state_pub_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
         "/vehicle/steering_motor_state", 10);
   steering_motor_temperature = this->create_publisher<std_msgs::msg::Int8>(
-        "steering_motor_temperature", 10);
+        "vehicle/steering_motor_temperature", 10);
   steering_motor_current = this->create_publisher<std_msgs::msg::Float64>(
-        "steering_motor_current", 10);
+        "vehicle/steering_motor_current", 10);
   steering_motor_error = this->create_publisher<std_msgs::msg::Int8>(
-        "steering_motor_error", 10);
+        "vehicle/steering_motor_error", 10);
 
   hydraulic_line_pressure_publisher_ =
       this->create_publisher<custom_interfaces::msg::HydraulicLinePressure>(
@@ -135,7 +135,6 @@ void RosCan::send_steering_control(double steering_angle_command) {
   canWrite(hnd_, 0x01, enter_control_mode, 8, 0);
 
   long id = STEERING_COMMAND_CUBEM_ID;
-  char buffer_steering[4];
   unsigned char buffer_steering[8];
 
   float v_des = 0.0f;
@@ -552,8 +551,8 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
     this->cubem_set_origin();
   }
 
-  int angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
-  int speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
+  int16_t angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
+  int16_t speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
   int current = (msg[4] << 8) | msg[5]; // Extract 16-bit motor current
   int temperature = msg[6]; // Extract 8-bit motor temperature
   int error = msg[7];  // Extract 8-bit motor error
@@ -561,7 +560,7 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
   auto motor_message = custom_interfaces::msg::SteeringAngle();
   motor_message.header.stamp = this->get_clock()->now();
   motor_message.steering_angle = static_cast<double>(angle) * 0.1;  // Convert to degrees
-  motor_message.steering_speed = static_cast<double>(speed) * 10.0; // Convert to RPM
+  motor_message.steering_speed = static_cast<double>(speed) / 10.0; // Convert to RPM
 
   auto current_msg = std_msgs::msg::Float64();
   auto temperature_msg = std_msgs::msg::Int8();
@@ -685,7 +684,7 @@ void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
 
 
 // Helper function to send the Kp and Kd values to the CAN bus
-void pack_cmd(unsigned char *msg, float p_des, float v_des, float kp, float kd, float t_ff) {
+void RosCan::pack_cmd(unsigned char *msg, float p_des, float v_des, float kp, float kd, float t_ff) {
   float P_MIN = -95.5f, P_MAX = 95.5f;
   float V_MIN = -30.0f, V_MAX = 30.0f;
   float T_MIN = -18.0f, T_MAX = 18.0f;
