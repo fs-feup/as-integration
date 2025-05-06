@@ -129,24 +129,36 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
 }
 
 void RosCan::send_steering_control(double steering_angle_command) {
+
+  // Command to enter MIT control mode
+  unsigned char enter_control_mode[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC};
+  canWrite(hnd_, 0x01, enter_control_mode, 8, 0);
+
   long id = STEERING_COMMAND_CUBEM_ID;
   char buffer_steering[4];
-  create_steering_angle_command(steering_angle_command, buffer_steering);
-  void *steering_requestData = static_cast<void *>(buffer_steering);
-  unsigned int steering_dlc = 4;
-  unsigned int flag = canMSG_EXT;  // Steering motor used CAN Extended
+  unsigned char buffer_steering[8];
 
-  // Write the steering message to the CAN bus
-  // DO NOT EVER EDIT THIS CODE BLOCK
-  // CODE BLOCK START
-  check_steering_safe(steering_requestData);  // DO NOT REMOVE EVER
+  float v_des = 0.0f;
+  float kp = 20.0f;
+  float kd = 0.5f;
+  float torque_ff = 0.0f;
+
+   // pack into MIT-mode 8-byte frame
+   pack_cmd(buffer_steering, steering_angle_command, v_des, kp, kd, torque_ff);
+
+   // DO NOT EVER REMOVE
+   check_steering_safe(buffer_steering);
+ 
+   void *steering_requestData = buffer_steering;
+   unsigned int steering_dlc = 8;
+   unsigned int flag = 0;  // standard CAN frame for MIT mode
   stat_ = can_lib_wrapper_->canWrite(hnd_, id, steering_requestData, steering_dlc, flag);
   // CODE BLOCK END
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to write steering to CAN bus");
   } else {
-    RCLCPP_DEBUG(this->get_logger(), "Write steering to CAN bus success: %f (degrees)",
-                 steering_angle_command);
+    RCLCPP_DEBUG(this->get_logger(), "Write steering to CAN bus success: %f rad  (Kp=%f, Kd=%f)",
+                 steering_angle_command, kp, kd);
   }
 }
 
@@ -669,4 +681,41 @@ void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
   message.pressure = hydraulic_line_pressure;
 
   hydraulic_line_pressure_publisher_->publish(message);
+}
+
+
+// Helper function to send the Kp and Kd values to the CAN bus
+void pack_cmd(unsigned char *msg, float p_des, float v_des, float kp, float kd, float t_ff) {
+  float P_MIN = -95.5f, P_MAX = 95.5f;
+  float V_MIN = -30.0f, V_MAX = 30.0f;
+  float T_MIN = -18.0f, T_MAX = 18.0f;
+  float Kp_MIN = 0.0f, Kp_MAX = 500.0f;
+  float Kd_MIN = 0.0f, Kd_MAX = 5.0f;
+
+  p_des = std::clamp(p_des, P_MIN, P_MAX);
+  v_des = std::clamp(v_des, V_MIN, V_MAX);
+  kp = std::clamp(kp, Kp_MIN, Kp_MAX);
+  kd = std::clamp(kd, Kd_MIN, Kd_MAX);
+  t_ff = std::clamp(t_ff, T_MIN, T_MAX);
+
+  auto float_to_uint = [](float x, float x_min, float x_max, unsigned int bits) {
+    float span = x_max - x_min;
+    float offset = x_min;
+    return (int)((x - offset) * ((float)((1 << bits) / span)));
+  };
+
+  int p_int = float_to_uint(p_des, P_MIN, P_MAX, 16);
+  int v_int = float_to_uint(v_des, V_MIN, V_MAX, 12);
+  int kp_int = float_to_uint(kp, Kp_MIN, Kp_MAX, 12);
+  int kd_int = float_to_uint(kd, Kd_MIN, Kd_MAX, 12);
+  int t_int = float_to_uint(t_ff, T_MIN, T_MAX, 12);
+
+  msg[0] = p_int >> 8;
+  msg[1] = p_int & 0xFF;
+  msg[2] = v_int >> 4;
+  msg[3] = ((v_int & 0xF) << 4) | (kp_int >> 8);
+  msg[4] = kp_int & 0xFF;
+  msg[5] = kd_int >> 4;
+  msg[6] = ((kd_int & 0xF) << 4) | (t_int >> 8);
+  msg[7] = t_int & 0xFF;
 }

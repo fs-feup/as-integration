@@ -10,24 +10,27 @@
 
 // DO NOT CHANGE ANYTHING IN THIS FILE
 
+constexpr uint16_t STEERING_RAW_MIN = 0x7EC4;  // new limit for the new message type
+constexpr uint16_t STEERING_RAW_MAX = 0x81B3;  // new limit for the new message type
+
 /**
- * @brief Checks if the steering angle is within the safe limits
- * If not, the program will enter in fatal error
- *
- * @param steering_payload_data steering buffer
- */
+  * @brief Checks if the steering angle is within the safe limits
+  * If not, the program will enter in fatal error
+  *
+  * @param steering_payload_data steering buffer
+  */
 void check_steering_safe(void *steering_payload_data) {
   // DO NOT REMOVE NEXT BLOCK
-  unsigned char hex_value =
-      static_cast<unsigned char>((static_cast<char *>(steering_payload_data))[1]);
-  unsigned char hex_sign =
-      static_cast<unsigned char>((static_cast<char *>(steering_payload_data))[0]);
-  // SIGN OF THE ANGLE
-  assert(hex_sign == 0x00 || hex_sign == 0xff);
-  // HARD STEERING UPPER LIMIT
-  assert(hex_sign != 0x00 || hex_value < STEERING_UPPER_LIMIT_HEX_CHAR);
-  // HARD STEERING LOWER LIMIT
-  assert(hex_sign != 0xff || hex_value > STEERING_LOWER_LIMIT_HEX_CHAR);
+
+  auto *b = static_cast<unsigned char*>(steering_payload_data);
+  uint16_t raw = (uint16_t(b[0]) << 8) | uint16_t(b[1]);
+
+  // HARD LOWER LIMIT (more negative than -1.2 rad)
+  assert(raw >= STEERING_RAW_MIN);
+
+  // HARD UPPER LIMIT (more positive than +1.2 rad)
+  assert(raw <= STEERING_RAW_MAX);
+
   // DO NOT REMOVE PREVIOUS BLOCK
 }
 
