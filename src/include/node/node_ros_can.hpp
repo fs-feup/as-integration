@@ -69,7 +69,7 @@ private:
       steering_motor_temperature;  // Publisher for Cube Mars Steering motor temperature
   rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
       steering_motor_error; // Publisher for steering motor error
-      
+
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
       hydraulic_line_pressure_publisher_;  ///< Publisher for hydraulic line pressure
 
@@ -102,7 +102,8 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;            ///< Timer for periodic tasks
   rclcpp::TimerBase::SharedPtr timer_alive_msg_;  ///< Timer for sending alive messages
 
-  canHandle hnd_;  ///< Handle to the CAN channel
+  canHandle hnd0_;  ///< Handle to the CAN channel
+  canHandle hnd1_;  ///< Handle to the CAN channel
 
   canStatus stat_;  ///< Status of the last CANlib call
 

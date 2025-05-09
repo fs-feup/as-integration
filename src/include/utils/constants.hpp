@@ -45,12 +45,12 @@
 /**
  * Payload of the single byte message to reset the steering angle sensor
  */
-#define SET_ORIGIN_BOSCH_STEERING_ANGLE_RESET 0x05
+#define SET_ORIGIN_BOSCH_STEERING_ANGLE_RESET 0x50
 
 /**
  * Payload of the single byte message to set the steering angle sensor origin
  */
-#define SET_ORIGIN_BOSCH_STEERING_ANGLE_SET 0x03
+#define SET_ORIGIN_BOSCH_STEERING_ANGLE_SET 0x30
 
 /**
  * Message code for Bamocar battery voltage
