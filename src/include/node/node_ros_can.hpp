@@ -339,7 +339,7 @@ public:
   FRIEND_TEST(RosCanTest, TestImuAccPublisher);
   FRIEND_TEST(RosCanTest, TestImuGyroPublisher);
   FRIEND_TEST(RosCanTest, TestCanInterpreterMasterStatusMission);
-  FRIEND_TEST(RosCanTest, TestCanInterpreter_TEENSY_C1_RR_RPM_CODE);
+  FRIEND_TEST(RosCanTest, TestCanInterpreter_TEENSY_DASH_RR_RPM_CODE);
   FRIEND_TEST(RosCanTest, TestOutOfRangeUpperSteeringThrottle);
   FRIEND_TEST(RosCanTest, TestOutOfRangeLowerSteeringThrottle);
   FRIEND_TEST(RosCanTest, TestOutOfRangeSingleSteeringThrottle);

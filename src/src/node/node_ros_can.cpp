@@ -378,16 +378,16 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
       imu_acc_publisher(msg);
       break;
     }
-
+    
     case IMU_GYRO: {
       imu_angular_velocity_publisher(msg);
       break;
     }
 
-    case TEENSY_C1: {
-      if (msg[0] == TEENSY_C1_RR_RPM_CODE) {
+    case TEENSY_DASH: {
+      if (msg[0] == TEENSY_DASH_RR_RPM_CODE) {
         rr_rpm_publisher(msg);
-      } else if (msg[0] == TEENSY_C1_RL_RPM_CODE) {
+      } else if (msg[0] == TEENSY_DASH_RL_RPM_CODE) {
         rl_rpm_publisher(msg);
       } else if (msg[0] == HYDRAULIC_LINE) {
         hydraulic_line_callback(msg);
