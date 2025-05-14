@@ -20,12 +20,12 @@
 /*
  * value of msg[0] for RR RPM Code
  */
-#define TEENSY_DASH_RR_RPM_CODE 0x11
+#define TEENSY_RR_RPM_CODE 0x11
 
 /*
  * value of msg[0] for RL RPM Code
  */
-#define TEENSY_DASH_RL_RPM_CODE 0x12
+#define TEENSY_RL_RPM_CODE 0x12
 
 /*
  * value of msg[0] for AS CU alive message
@@ -87,7 +87,7 @@
  * Current AS State
  * left wheel rpm
  */
-#define MASTER_STATUS 0x300
+#define MASTER_ID 0x300
 
 /*
  * ID used for:

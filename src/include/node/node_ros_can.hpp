@@ -233,11 +233,18 @@ private:
   void can_interpreter_bamocar(const unsigned char msg[8]);
 
   /**
-   * @brief Interprets the master status CAN message.
+   * @brief Interprets the master CAN messages.
    *
    * @param msg CAN message data
    */
-  void can_interpreter_master_status(const unsigned char msg[8]);
+  void can_interpreter_master(const unsigned char msg[8]);
+
+    /**
+     * @brief Interprets the dash CAN messages.
+     *
+     * @param msg CAN message data
+     */
+  void dash_interpreter(const unsigned char msg[8]);
 
   /**
    * @brief Publishes master log data.

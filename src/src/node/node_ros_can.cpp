@@ -362,14 +362,8 @@ void RosCan::can_sniffer() {
 void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, unsigned int,
                              unsigned long) {
   switch (id) {
-    case 0x510:
-      RCLCPP_INFO(this->get_logger(), "Received message from 0x510");
-      // print msg.buf 0
-      RCLCPP_INFO(this->get_logger(), "Message: %02X %02X %02X %02X %02X %02X %02X %02X", msg[0], msg[1],
-                  msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]);
-
-    case MASTER_STATUS: {
-      can_interpreter_master_status(msg);
+    case MASTER_ID: {
+      can_interpreter_master(msg);
       break;
     }
 
@@ -385,14 +379,7 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
     }
 
     case TEENSY_DASH: {
-      if (msg[0] == TEENSY_DASH_RR_RPM_CODE) {
-        rr_rpm_publisher(msg);
-      } else if (msg[0] == TEENSY_DASH_RL_RPM_CODE) {
-        rl_rpm_publisher(msg);
-      } else if (msg[0] == HYDRAULIC_LINE) {
-        hydraulic_line_callback(msg);
-      }
-      break;
+      dash_interpreter(msg); 
     }
     case STEERING_CUBEM_ID: {
       steering_angle_cubem_publisher(msg);
@@ -434,7 +421,7 @@ void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
   }
 }
 
-void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
+void RosCan::can_interpreter_master(const unsigned char msg[8]) {
   switch (msg[0]) {
     case MASTER_AS_STATE_CODE: {
       if (msg[1] == 3) {  // If AS State == Driving
@@ -458,6 +445,25 @@ void RosCan::can_interpreter_master_status(const unsigned char msg[8]) {
       this->master_logs_2_publisher(msg);
       break;
     }
+    case TEENSY_RR_RPM_CODE: {
+      rr_rpm_publisher(msg);
+      break;
+    }
+    case TEENSY_RL_RPM_CODE: {
+      rl_rpm_publisher(msg);
+      break;
+    }
+    default:
+      break;  // add error message
+  }
+}
+
+void RosCan::dash_interpreter(const unsigned char msg[8]) {
+  switch (msg[0]) {
+    case HYDRAULIC_LINE: {
+      hydraulic_line_callback(msg);
+      break;
+    }
     default:
       break;  // add error message
   }
@@ -468,7 +474,7 @@ void RosCan::master_logs_publisher(const unsigned char msg[8]) {
   bool emergency_signal = (msg[5] >> 7) & 0x01;
   bool pneumatic_line_pressure = (msg[5] >> 6) & 0x01;
   bool engage_ebs_check = (msg[5] >> 5) & 0x01;
-  bool realease_ebs_check = (msg[5] >> 4) & 0x01;
+  bool release_ebs_check = (msg[5] >> 4) & 0x01;
   bool steer_dead = (msg[5] >> 3) & 0x01;
   bool pc_dead = (msg[5] >> 2) & 0x01;
   bool inversor_dead = (msg[5] >> 1) & 0x01;
@@ -485,7 +491,7 @@ void RosCan::master_logs_publisher(const unsigned char msg[8]) {
   log_message.emergency_signal = emergency_signal;
   log_message.pneumatic_line_pressure = pneumatic_line_pressure;
   log_message.engage_ebs_check = engage_ebs_check;
-  log_message.realease_ebs_check = realease_ebs_check;
+  log_message.release_ebs_check = release_ebs_check;
   log_message.steer_dead = steer_dead;
   log_message.pc_dead = pc_dead;
   log_message.inversor_dead = inversor_dead;

@@ -209,7 +209,7 @@ TEST_F(RosCanTest, TestImuGyroPublisher) {
 
 TEST_F(RosCanTest, TestCanInterpreterMasterStatusMission) {
   unsigned char msg[8] = {MASTER_AS_MISSION_CODE, 0x02, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00};
-  long id = MASTER_STATUS;
+  long id = MASTER_ID;
   unsigned int dlc = 8;
   unsigned int flag = 0;
   unsigned long time = 0;
