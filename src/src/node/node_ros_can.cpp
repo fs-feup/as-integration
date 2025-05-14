@@ -80,8 +80,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   hnd0_ = canOpenChannel(0, canOPEN_EXCLUSIVE);//TODO: this will be used only for SAS
   hnd1_ = canOpenChannel(1, canOPEN_EXCLUSIVE);//TODO: this is for everything else
   // Setup CAN parameters for the channel
-  stat_ = canSetBusParams(hnd0_, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
-  stat_ = canSetBusParams(hnd1_, canBITRATE_1M, 0, 0, 4, 0, 0);  // check these values later
+  stat_ = canSetBusParams(hnd0_, canBITRATE_1M, 0, 0, 4, 0, 0);  // check these values later
+  stat_ = canSetBusParams(hnd1_, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN parameters");
   }
@@ -104,7 +104,6 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   }
   RCLCPP_INFO(this->get_logger(), "Node initialized");
   sleep(1);
-  bosch_steering_angle_set_origin();//TODO: maybe change this to set 0 after wheels are centered (????) 
 }
 
 // -------------- ROS TO CAN --------------
@@ -305,7 +304,7 @@ int RosCan::bosch_steering_angle_set_origin() {
   unsigned int flag = 0;
 
   // Reset previous origin
-  stat_ = canWrite(hnd0_, id, request_data, dlc, flag);
+  stat_ = canWrite(hnd1_, id, request_data, dlc, flag);
   if (stat_ != canOK) {
     return 1;
   }
@@ -315,7 +314,7 @@ int RosCan::bosch_steering_angle_set_origin() {
   request_data = static_cast<void *>(buffer);
 
   // Set new origin
-  stat_ = canWrite(hnd0_, id, request_data, dlc, flag);
+  stat_ = canWrite(hnd1_, id, request_data, dlc, flag);
   if (stat_ != canOK) {
     return 1;
   }
@@ -579,6 +578,7 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
   // When steering motor wakes up, set its origin
   if (!this->cubem_configuration_sent_) {
     this->cubem_configuration_sent_ = true;
+    bosch_steering_angle_set_origin();
     this->cubem_set_origin();
   }
 
