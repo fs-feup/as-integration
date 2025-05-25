@@ -324,6 +324,8 @@ public:
    */
   RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param);
 
+  ~RosCan() override;
+
   friend class RosCanTest;
   FRIEND_TEST(RosCanTest, ControlCallback);
   FRIEND_TEST(RosCanTest, ControlCallbackLowerThrottle);

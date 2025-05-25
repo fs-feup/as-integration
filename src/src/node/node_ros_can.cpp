@@ -78,19 +78,26 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   canInitializeLibrary();
   // A channel to a CAN circuit is opened. The channel depend on the hardware
   hnd_ = canOpenChannel(0, canOPEN_EXCLUSIVE);
+  if (hnd_ < 0) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to open CAN channel");
+    return;
+  }
   // Setup CAN parameters for the channel
   stat_ = canSetBusParams(hnd_, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN parameters");
+    return;
   }
   // There are different types of controllers, this is the default
   stat_ = canSetBusOutputControl(hnd_, canDRIVER_NORMAL);
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN controller");
+    return;
   }
   stat_ = canBusOn(hnd_);
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to turn on CAN bus");
+    return;
   }
   RCLCPP_INFO(this->get_logger(), "Node initialized");
 }
@@ -669,4 +676,14 @@ void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
   message.pressure = hydraulic_line_pressure;
 
   hydraulic_line_pressure_publisher_->publish(message);
+}
+
+RosCan::~RosCan() {
+  RCLCPP_INFO(this->get_logger(), "Shutting down CAN interface");
+
+  if (hnd_ >= 0) {
+    canBusOff(hnd_);
+    canClose(hnd_);
+    hnd_ = -1;
+  }
 }
