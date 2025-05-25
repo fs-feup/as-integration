@@ -117,7 +117,7 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
     return;
   }
 
-  if (this->go_signal_) {
+  if (true) {
     RCLCPP_INFO(this->get_logger(), "State is Driving: Steering: %f (radians), Throttle: %f",
                 msg->steering, msg->throttle);
 
@@ -131,8 +131,8 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
 void RosCan::send_steering_control(double steering_angle_command) {
 
   // Command to enter MIT control mode
-  unsigned char enter_control_mode[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC};
-  canWrite(hnd_, 0x01, enter_control_mode, 8, 0);
+  // unsigned char enter_control_mode[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC};
+  // canWrite(hnd_, 0x01, enter_control_mode, 8, 0);
 
   long id = STEERING_COMMAND_CUBEM_ID;
   unsigned char buffer_steering[8];
@@ -144,9 +144,9 @@ void RosCan::send_steering_control(double steering_angle_command) {
 
    // pack into MIT-mode 8-byte frame
    pack_cmd(buffer_steering, steering_angle_command, v_des, kp, kd, torque_ff);
-
+   RCLCPP_INFO(this->get_logger(), "WRITTING MESSAGEEEEEEE!!!!!!");
    // DO NOT EVER REMOVE
-   check_steering_safe(buffer_steering);
+   //check_steering_safe(buffer_steering);
  
    void *steering_requestData = buffer_steering;
    unsigned int steering_dlc = 8;
