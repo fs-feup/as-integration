@@ -718,3 +718,13 @@ void RosCan::pack_cmd(unsigned char *msg, float p_des, float v_des, float kp, fl
   msg[6] = ((kd_int & 0xF) << 4) | (t_int >> 8);
   msg[7] = t_int & 0xFF;
 }
+
+RosCan::~RosCan() {
+  RCLCPP_INFO(this->get_logger(), "Shutting down CAN interface");
+
+  if (hnd_ >= 0) {
+    canBusOff(hnd_);
+    canClose(hnd_);
+    hnd_ = -1;
+  }
+}
