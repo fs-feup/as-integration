@@ -42,11 +42,11 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   steering_motor_state_pub_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
         "/vehicle/steering_motor_state", 10);
   steering_motor_temperature = this->create_publisher<std_msgs::msg::Int8>(
-        "steering_motor_temperature", 10);
+        "/vehicle/steering_motor_temperature", 10);
   steering_motor_current = this->create_publisher<std_msgs::msg::Float64>(
-        "steering_motor_current", 10);
+        "/vehicle/steering_motor_current", 10);
   steering_motor_error = this->create_publisher<std_msgs::msg::Int8>(
-        "steering_motor_error", 10);
+        "/vehicle/steering_motor_error", 10);
 
   hydraulic_line_pressure_publisher_ =
       this->create_publisher<custom_interfaces::msg::HydraulicLinePressure>(
@@ -83,7 +83,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
     return;
   }
   // Setup CAN parameters for the channel
-  stat_ = canSetBusParams(hnd_, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
+  stat_ = canSetBusParams(hnd_, canBITRATE_1M, 0, 0, 4, 0, 0);  // check these values later
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN parameters");
     return;
