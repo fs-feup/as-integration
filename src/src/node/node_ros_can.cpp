@@ -145,8 +145,9 @@ void RosCan::send_steering_control(double steering_angle_command) {
    // pack into MIT-mode 8-byte frame
    pack_cmd(buffer_steering, steering_angle_command, v_des, kp, kd, torque_ff);
    RCLCPP_INFO(this->get_logger(), "WRITTING MESSAGEEEEEEE!!!!!!");
-   // DO NOT EVER REMOVE
-   //check_steering_safe(buffer_steering);
+   RCLCPP_INFO(this->get_logger(), "Steering angle command buffer: %02X %02X %02X %02X %02X %02X %02X %02X",
+               buffer_steering[0], buffer_steering[1], buffer_steering[2], buffer_steering[3],
+               buffer_steering[4], buffer_steering[5], buffer_steering[6], buffer_steering[7]);
  
    void *steering_requestData = buffer_steering;
    unsigned int steering_dlc = 8;
