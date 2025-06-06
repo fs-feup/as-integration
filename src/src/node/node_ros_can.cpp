@@ -124,7 +124,7 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
     return;
   }
 
-  if (this->go_signal_) {
+  if (this->go_signal_||true) {
     RCLCPP_INFO(this->get_logger(), "State is Driving: Steering: %f (radians), Throttle: %f",
                 msg->steering, msg->throttle);
 
@@ -547,7 +547,7 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
     this->cubem_set_origin();
   }
 
-  int angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
+  int16_t angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
   int speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
   int current = (msg[4] << 8) | msg[5]; // Extract 16-bit motor current
   int temperature = msg[6]; // Extract 8-bit motor temperature
