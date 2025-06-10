@@ -83,7 +83,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
     return;
   }
   // Setup CAN parameters for the channel
-  stat_ = canSetBusParams(hnd_, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
+  stat_ = canSetBusParams(hnd_, canBITRATE_1M, 0, 0, 4, 0, 0);  // check these values later
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN parameters");
     return;
@@ -547,7 +547,7 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
     this->cubem_set_origin();
   }
 
-  int angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
+  int16_t angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
   int speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
   int current = (msg[4] << 8) | msg[5]; // Extract 16-bit motor current
   int temperature = msg[6]; // Extract 8-bit motor temperature
