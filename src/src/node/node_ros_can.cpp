@@ -40,7 +40,6 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       "/vehicle/bosch_steering_angle", 10);
 
   steering_motor_state_pub_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
-
         "/vehicle/steering_motor_state", 10);
   steering_motor_temperature = this->create_publisher<std_msgs::msg::Int8>(
         "/vehicle/steering_motor_temperature", 10);
@@ -577,11 +576,10 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
   }
 
   int16_t angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
-
-  int speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
-  int current = (msg[4] << 8) | msg[5]; // Extract 16-bit motor current
-  int temperature = msg[6]; // Extract 8-bit motor temperature
-  int error = msg[7];  // Extract 8-bit motor error
+  int16_t speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
+  int16_t current = (msg[4] << 8) | msg[5]; // Extract 16-bit motor current
+  int8_t temperature = msg[6]; // Extract 8-bit motor temperature
+  int8_t error = msg[7];  // Extract 8-bit motor error
 
 
   auto motor_message = custom_interfaces::msg::SteeringAngle();
