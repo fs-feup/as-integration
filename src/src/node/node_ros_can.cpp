@@ -40,13 +40,13 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       "/vehicle/bosch_steering_angle", 10);
 
   steering_motor_state_pub_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
-      "/vehicle/steering_motor_state", 10);
-  steering_motor_temperature =
-      this->create_publisher<std_msgs::msg::Int8>("vehicle/steering_motor_temperature", 10);
-  steering_motor_current =
-      this->create_publisher<std_msgs::msg::Float64>("vehicle/steering_motor_current", 10);
-  steering_motor_error =
-      this->create_publisher<std_msgs::msg::Int8>("vehicle/steering_motor_error", 10);
+
+        "/vehicle/steering_motor_state", 10);
+  steering_motor_temperature = this->create_publisher<std_msgs::msg::Int8>(
+        "/vehicle/steering_motor_temperature", 10);
+  steering_motor_current = this->create_publisher<std_msgs::msg::Float64>(
+        "/vehicle/steering_motor_current", 10);
+  steering_motor_error = this->create_publisher<std_msgs::msg::Int8>(
 
   hydraulic_line_pressure_publisher_ =
       this->create_publisher<custom_interfaces::msg::HydraulicLinePressure>(
@@ -77,18 +77,22 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   // initialize the CAN library
   canInitializeLibrary();
   // A channel to a CAN circuit is opened. The channel depend on the hardware
+
   hnd0_ = canOpenChannel(0, canOPEN_EXCLUSIVE);  // TODO: this will be used only for SAS
   hnd1_ = canOpenChannel(1, canOPEN_EXCLUSIVE);  // TODO: this is for everything else
   // Setup CAN parameters for the channel
   stat_ = canSetBusParams(hnd0_, canBITRATE_1M, 0, 0, 4, 0, 0);    // check these values later
   stat_ = canSetBusParams(hnd1_, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
+
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN parameters");
+    return;
   }
   // There are different types of controllers, this is the default
   stat_ = canSetBusOutputControl(hnd0_, canDRIVER_NORMAL);
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN controller");
+    return;
   }
   stat_ = canSetBusOutputControl(hnd1_, canDRIVER_NORMAL);
   if (stat_ != canOK) {
@@ -101,6 +105,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   stat_ = canBusOn(hnd1_);
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to turn on CAN bus");
+    return;
   }
   RCLCPP_INFO(this->get_logger(), "Node initialized");
   sleep(1);
@@ -572,10 +577,12 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
   }
 
   int16_t angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
-  int16_t speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
-  int current = (msg[4] << 8) | msg[5];    // Extract 16-bit motor current
-  int temperature = msg[6];                // Extract 8-bit motor temperature
-  int error = msg[7];                      // Extract 8-bit motor error
+
+  int speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
+  int current = (msg[4] << 8) | msg[5]; // Extract 16-bit motor current
+  int temperature = msg[6]; // Extract 8-bit motor temperature
+  int error = msg[7];  // Extract 8-bit motor error
+
 
   auto motor_message = custom_interfaces::msg::SteeringAngle();
   motor_message.header.stamp = this->get_clock()->now();
@@ -700,4 +707,14 @@ void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
   message.pressure = hydraulic_line_pressure;
 
   hydraulic_line_pressure_publisher_->publish(message);
+}
+
+RosCan::~RosCan() {
+  RCLCPP_INFO(this->get_logger(), "Shutting down CAN interface");
+
+  if (hnd_ >= 0) {
+    canBusOff(hnd_);
+    canClose(hnd_);
+    hnd_ = -1;
+  }
 }

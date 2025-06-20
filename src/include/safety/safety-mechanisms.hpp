@@ -19,7 +19,8 @@
  */
 void check_steering_safe(void *steering_payload_data) {
   // DO NOT REMOVE NEXT BLOCK
-
+  unsigned char second_hex_value =
+      static_cast<unsigned char>((static_cast<char *>(steering_payload_data))[2]);
   unsigned char hex_value =
       static_cast<unsigned char>((static_cast<char *>(steering_payload_data))[1]);
   unsigned char hex_sign =
@@ -27,10 +28,9 @@ void check_steering_safe(void *steering_payload_data) {
   // SIGN OF THE ANGLE
   assert(hex_sign == 0x00 || hex_sign == 0xff);
   // HARD STEERING UPPER LIMIT
-  assert(hex_sign != 0x00 || hex_value < STEERING_UPPER_LIMIT_HEX_CHAR);
+  assert(hex_sign != 0x00 || hex_value < STEERING_UPPER_LIMIT_HEX_CHAR || (hex_value == STEERING_UPPER_LIMIT_HEX_CHAR && second_hex_value < STEERING_SECOND_UPPER_LIMIT_HEX_CHAR));
   // HARD STEERING LOWER LIMIT
-  assert(hex_sign != 0xff || hex_value > STEERING_LOWER_LIMIT_HEX_CHAR);
-
+  assert(hex_sign != 0xff || hex_value > STEERING_LOWER_LIMIT_HEX_CHAR || (hex_value == STEERING_LOWER_LIMIT_HEX_CHAR && second_hex_value > STEERING_SECOND_LOWER_LIMIT_HEX_CHAR));
   // DO NOT REMOVE PREVIOUS BLOCK
 }
 
