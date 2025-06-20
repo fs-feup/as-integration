@@ -40,13 +40,13 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       "/vehicle/bosch_steering_angle", 10);
 
   steering_motor_state_pub_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
-        "/vehicle/steering_motor_state", 10);
-  steering_motor_temperature = this->create_publisher<std_msgs::msg::Int8>(
-        "vehicle/steering_motor_temperature", 10);
-  steering_motor_current = this->create_publisher<std_msgs::msg::Float64>(
-        "vehicle/steering_motor_current", 10);
-  steering_motor_error = this->create_publisher<std_msgs::msg::Int8>(
-        "vehicle/steering_motor_error", 10);
+      "/vehicle/steering_motor_state", 10);
+  steering_motor_temperature =
+      this->create_publisher<std_msgs::msg::Int8>("vehicle/steering_motor_temperature", 10);
+  steering_motor_current =
+      this->create_publisher<std_msgs::msg::Float64>("vehicle/steering_motor_current", 10);
+  steering_motor_error =
+      this->create_publisher<std_msgs::msg::Int8>("vehicle/steering_motor_error", 10);
 
   hydraulic_line_pressure_publisher_ =
       this->create_publisher<custom_interfaces::msg::HydraulicLinePressure>(
@@ -77,10 +77,10 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   // initialize the CAN library
   canInitializeLibrary();
   // A channel to a CAN circuit is opened. The channel depend on the hardware
-  hnd0_ = canOpenChannel(0, canOPEN_EXCLUSIVE);//TODO: this will be used only for SAS
-  hnd1_ = canOpenChannel(1, canOPEN_EXCLUSIVE);//TODO: this is for everything else
+  hnd0_ = canOpenChannel(0, canOPEN_EXCLUSIVE);  // TODO: this will be used only for SAS
+  hnd1_ = canOpenChannel(1, canOPEN_EXCLUSIVE);  // TODO: this is for everything else
   // Setup CAN parameters for the channel
-  stat_ = canSetBusParams(hnd0_, canBITRATE_1M, 0, 0, 4, 0, 0);  // check these values later
+  stat_ = canSetBusParams(hnd0_, canBITRATE_1M, 0, 0, 4, 0, 0);    // check these values later
   stat_ = canSetBusParams(hnd1_, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN parameters");
@@ -140,35 +140,24 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
 }
 
 void RosCan::send_steering_control(double steering_angle_command) {
-
-  // Command to enter MIT control mode
-  unsigned char enter_control_mode[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFC};
-  canWrite(hnd0_, 0x01, enter_control_mode, 8, 0);
-
   long id = STEERING_COMMAND_CUBEM_ID;
-  unsigned char buffer_steering[8];
+  char buffer_steering[4];
+  create_steering_angle_command(steering_angle_command, buffer_steering);
+  void *steering_requestData = static_cast<void *>(buffer_steering);
+  unsigned int steering_dlc = 4;
+  unsigned int flag = canMSG_EXT;  // Steering motor used CAN Extended
 
-  float v_des = 0.0f;
-  float kp = 20.0f;
-  float kd = 0.5f;
-  float torque_ff = 0.0f;
-
-   // pack into MIT-mode 8-byte frame
-   pack_cmd(buffer_steering, steering_angle_command, v_des, kp, kd, torque_ff);
-
-   // DO NOT EVER REMOVE
-   check_steering_safe(buffer_steering);
- 
-   void *steering_requestData = buffer_steering;
-   unsigned int steering_dlc = 8;
-   unsigned int flag = 0;  // standard CAN frame for MIT mode
-  stat_ = can_lib_wrapper_->canWrite(hnd0_, id, steering_requestData, steering_dlc, flag);
+  // Write the steering message to the CAN bus
+  // DO NOT EVER EDIT THIS CODE BLOCK
+  // CODE BLOCK START
+  check_steering_safe(steering_requestData);  // DO NOT REMOVE EVER
+  stat_ = can_lib_wrapper_->canWrite(hnd_, id, steering_requestData, steering_dlc, flag);
   // CODE BLOCK END
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to write steering to CAN bus");
   } else {
-    RCLCPP_DEBUG(this->get_logger(), "Write steering to CAN bus success: %f rad  (Kp=%f, Kd=%f)",
-                 steering_angle_command, kp, kd);
+    RCLCPP_DEBUG(this->get_logger(), "Write steering to CAN bus success: %f (degrees)",
+                 steering_angle_command);
   }
 }
 
@@ -371,14 +360,14 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
       imu_acc_publisher(msg);
       break;
     }
-    
+
     case IMU_GYRO: {
       imu_angular_velocity_publisher(msg);
       break;
     }
 
     case TEENSY_DASH: {
-      dash_interpreter(msg); 
+      dash_interpreter(msg);
     }
     case STEERING_CUBEM_ID: {
       steering_angle_cubem_publisher(msg);
@@ -584,21 +573,21 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
 
   int16_t angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
   int16_t speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
-  int current = (msg[4] << 8) | msg[5]; // Extract 16-bit motor current
-  int temperature = msg[6]; // Extract 8-bit motor temperature
-  int error = msg[7];  // Extract 8-bit motor error
+  int current = (msg[4] << 8) | msg[5];    // Extract 16-bit motor current
+  int temperature = msg[6];                // Extract 8-bit motor temperature
+  int error = msg[7];                      // Extract 8-bit motor error
 
   auto motor_message = custom_interfaces::msg::SteeringAngle();
   motor_message.header.stamp = this->get_clock()->now();
-  motor_message.steering_angle = static_cast<double>(angle) * 0.1;  // Convert to degrees
-  motor_message.steering_speed = static_cast<double>(speed) / 10.0; // Convert to RPM
+  motor_message.steering_angle = static_cast<double>(angle) * 0.1;   // Convert to degrees
+  motor_message.steering_speed = static_cast<double>(speed) / 10.0;  // Convert to RPM
 
   auto current_msg = std_msgs::msg::Float64();
   auto temperature_msg = std_msgs::msg::Int8();
   auto error_msg = std_msgs::msg::Int8();
-  current_msg.data = static_cast<double>(current) * 0.01; // Convert to Amperes
-  temperature_msg.data = static_cast<int8_t>(temperature); // Convert to int8
-  error_msg.data = static_cast<int8_t>(error); // Convert to int8
+  current_msg.data = static_cast<double>(current) * 0.01;   // Convert to Amperes
+  temperature_msg.data = static_cast<int8_t>(temperature);  // Convert to int8
+  error_msg.data = static_cast<int8_t>(error);              // Convert to int8
 
   steering_motor_state_pub_->publish(motor_message);
   steering_motor_current->publish(current_msg);
@@ -636,7 +625,7 @@ void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
   float speed = negative ? -(speed_value / 10.0) : speed_value / 10.0;
 
   speed = speed * M_PI / 180;
-  
+
   angle = angle * M_PI / 180;
   this->steering_angle_ = -angle;  // Used for initial adjustment
   RCLCPP_INFO(this->get_logger(), "Steering angle: %f", this->steering_angle_);
@@ -711,41 +700,4 @@ void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
   message.pressure = hydraulic_line_pressure;
 
   hydraulic_line_pressure_publisher_->publish(message);
-}
-
-
-// Helper function to send the Kp and Kd values to the CAN bus
-void RosCan::pack_cmd(unsigned char *msg, float p_des, float v_des, float kp, float kd, float t_ff) {
-  float P_MIN = -95.5f, P_MAX = 95.5f;
-  float V_MIN = -30.0f, V_MAX = 30.0f;
-  float T_MIN = -18.0f, T_MAX = 18.0f;
-  float Kp_MIN = 0.0f, Kp_MAX = 500.0f;
-  float Kd_MIN = 0.0f, Kd_MAX = 5.0f;
-
-  p_des = std::clamp(p_des, P_MIN, P_MAX);
-  v_des = std::clamp(v_des, V_MIN, V_MAX);
-  kp = std::clamp(kp, Kp_MIN, Kp_MAX);
-  kd = std::clamp(kd, Kd_MIN, Kd_MAX);
-  t_ff = std::clamp(t_ff, T_MIN, T_MAX);
-
-  auto float_to_uint = [](float x, float x_min, float x_max, unsigned int bits) {
-    float span = x_max - x_min;
-    float offset = x_min;
-    return (int)((x - offset) * ((float)((1 << bits) / span)));
-  };
-
-  int p_int = float_to_uint(p_des, P_MIN, P_MAX, 16);
-  int v_int = float_to_uint(v_des, V_MIN, V_MAX, 12);
-  int kp_int = float_to_uint(kp, Kp_MIN, Kp_MAX, 12);
-  int kd_int = float_to_uint(kd, Kd_MIN, Kd_MAX, 12);
-  int t_int = float_to_uint(t_ff, T_MIN, T_MAX, 12);
-
-  msg[0] = p_int >> 8;
-  msg[1] = p_int & 0xFF;
-  msg[2] = v_int >> 4;
-  msg[3] = ((v_int & 0xF) << 4) | (kp_int >> 8);
-  msg[4] = kp_int & 0xFF;
-  msg[5] = kd_int >> 4;
-  msg[6] = ((kd_int & 0xF) << 4) | (t_int >> 8);
-  msg[7] = t_int & 0xFF;
 }

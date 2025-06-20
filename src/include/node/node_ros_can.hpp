@@ -21,11 +21,9 @@
 #include "custom_interfaces/msg/temperature.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
-
+#include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/int8.hpp"
-
-#include "rclcpp/rclcpp.hpp"
 
 /**
  * @class RosCan
@@ -63,12 +61,12 @@ private:
 
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       steering_motor_state_pub_;  ///< Publisher for CubeM Motor Steering angle
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr 
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
       steering_motor_current;  // Publisher for CubeMars motor current
-  rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr 
+  rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
       steering_motor_temperature;  // Publisher for Cube Mars Steering motor temperature
   rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
-      steering_motor_error; // Publisher for steering motor error
+      steering_motor_error;  // Publisher for steering motor error
 
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
       hydraulic_line_pressure_publisher_;  ///< Publisher for hydraulic line pressure
@@ -239,11 +237,11 @@ private:
    */
   void can_interpreter_master(const unsigned char msg[8]);
 
-    /**
-     * @brief Interprets the dash CAN messages.
-     *
-     * @param msg CAN message data
-     */
+  /**
+   * @brief Interprets the dash CAN messages.
+   *
+   * @param msg CAN message data
+   */
   void dash_interpreter(const unsigned char msg[8]);
 
   /**
@@ -325,10 +323,6 @@ private:
    * @return 0 on success, otherwise on failure
    */
   int bosch_steering_angle_set_origin();
-
-
-  
-  void pack_cmd(unsigned char *msg, float p_des, float v_des, float kp, float kd, float t_ff);
 
 public:
   /**

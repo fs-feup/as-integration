@@ -2,6 +2,7 @@
 #define SAFETY_MECHANISMS_HPP
 
 #include <assert.h>
+
 #include <algorithm>
 #include <cmath>
 #include <rclcpp/rclcpp.hpp>
@@ -10,26 +11,25 @@
 
 // DO NOT CHANGE ANYTHING IN THIS FILE
 
-constexpr uint16_t STEERING_RAW_MIN = 0x7EC4;  // new limit for the new message type
-constexpr uint16_t STEERING_RAW_MAX = 0x81B3;  // new limit for the new message type
-
 /**
-  * @brief Checks if the steering angle is within the safe limits
-  * If not, the program will enter in fatal error
-  *
-  * @param steering_payload_data steering buffer
-  */
+ * @brief Checks if the steering angle is within the safe limits
+ * If not, the program will enter in fatal error
+ *
+ * @param steering_payload_data steering buffer
+ */
 void check_steering_safe(void *steering_payload_data) {
   // DO NOT REMOVE NEXT BLOCK
 
-  auto *b = static_cast<unsigned char*>(steering_payload_data);
-  uint16_t raw = (uint16_t(b[0]) << 8) | uint16_t(b[1]);
-
-  // HARD LOWER LIMIT (more negative than -1.2 rad)
-  assert(raw >= STEERING_RAW_MIN);
-
-  // HARD UPPER LIMIT (more positive than +1.2 rad)
-  assert(raw <= STEERING_RAW_MAX);
+  unsigned char hex_value =
+      static_cast<unsigned char>((static_cast<char *>(steering_payload_data))[1]);
+  unsigned char hex_sign =
+      static_cast<unsigned char>((static_cast<char *>(steering_payload_data))[0]);
+  // SIGN OF THE ANGLE
+  assert(hex_sign == 0x00 || hex_sign == 0xff);
+  // HARD STEERING UPPER LIMIT
+  assert(hex_sign != 0x00 || hex_value < STEERING_UPPER_LIMIT_HEX_CHAR);
+  // HARD STEERING LOWER LIMIT
+  assert(hex_sign != 0xff || hex_value > STEERING_LOWER_LIMIT_HEX_CHAR);
 
   // DO NOT REMOVE PREVIOUS BLOCK
 }
@@ -54,7 +54,7 @@ void check_throttle_safe(void *throttle_payload_data) {
 }
 
 /**
- * @brief Determines the max torque for braking 
+ * @brief Determines the max torque for braking
  * given the current rpm of the motor
  * and battery voltage. Follows the formula established in latex
  *
@@ -100,28 +100,28 @@ bool checkCRC8(const unsigned char msg[8]) {
 
 /**
  * @brief Calculates and verifies the CRC8 checksum for a message based on the SAE J1850 protocol.
- * 
- * @param msg The input message, an array of 8 bytes. The first 7 bytes contain the data, 
+ *
+ * @param msg The input message, an array of 8 bytes. The first 7 bytes contain the data,
  * and the 8th byte contains the received CRC value.
- * @return bool True if the calculated CRC matches the received CRC, indicating the message 
+ * @return bool True if the calculated CRC matches the received CRC, indicating the message
  * integrity is valid. False if there is a mismatch.
  */
 bool calculateCRC8_SAE_J1850(const unsigned char msg[8]) {
-    unsigned char received_crc = msg[7]; 
-    unsigned char calculated_crc = CRC8_SAE_J1850_INITIAL_CRC;
-    unsigned char polynomial = CRC8_SAE_J1850_POLYNOMIAL;
-    
-    for (int i = 0; i < 7; i++) {
-        calculated_crc ^= msg[i];
-        for (int j = 0; j < 8; ++j) {
-            if (calculated_crc & 0x80) {
-                calculated_crc = (calculated_crc << 1) ^ polynomial;
-            } else {
-                calculated_crc <<= 1;
-            }
-        }
+  unsigned char received_crc = msg[7];
+  unsigned char calculated_crc = CRC8_SAE_J1850_INITIAL_CRC;
+  unsigned char polynomial = CRC8_SAE_J1850_POLYNOMIAL;
+
+  for (int i = 0; i < 7; i++) {
+    calculated_crc ^= msg[i];
+    for (int j = 0; j < 8; ++j) {
+      if (calculated_crc & 0x80) {
+        calculated_crc = (calculated_crc << 1) ^ polynomial;
+      } else {
+        calculated_crc <<= 1;
+      }
     }
-    return calculated_crc == received_crc;
+  }
+  return calculated_crc == received_crc;
 }
 
 #endif  // SAFETY_MECHANISMS_HPP
