@@ -46,6 +46,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   steering_motor_current = this->create_publisher<std_msgs::msg::Float64>(
         "/vehicle/steering_motor_current", 10);
   steering_motor_error = this->create_publisher<std_msgs::msg::Int8>(
+        "/vehicle/steering_motor_error", 10);
 
   hydraulic_line_pressure_publisher_ =
       this->create_publisher<custom_interfaces::msg::HydraulicLinePressure>(
@@ -155,7 +156,7 @@ void RosCan::send_steering_control(double steering_angle_command) {
   // DO NOT EVER EDIT THIS CODE BLOCK
   // CODE BLOCK START
   check_steering_safe(steering_requestData);  // DO NOT REMOVE EVER
-  stat_ = can_lib_wrapper_->canWrite(hnd_, id, steering_requestData, steering_dlc, flag);
+  stat_ = can_lib_wrapper_->canWrite(hnd0_, id, steering_requestData, steering_dlc, flag);
   // CODE BLOCK END
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to write steering to CAN bus");
@@ -456,6 +457,14 @@ void RosCan::dash_interpreter(const unsigned char msg[8]) {
       hydraulic_line_callback(msg);
       break;
     }
+    case FR_RPM_CODE: {
+      fr_rpm_publisher(msg);
+      break;
+    }
+    case FL_RPM_CODE: {
+      fl_rpm_publisher(msg);
+      break;
+    }
     default:
       break;  // add error message
   }
@@ -483,7 +492,7 @@ void RosCan::master_logs_publisher(const unsigned char msg[8]) {
   log_message.emergency_signal = emergency_signal;
   log_message.pneumatic_line_pressure = pneumatic_line_pressure;
   log_message.engage_ebs_check = engage_ebs_check;
-  log_message.release_ebs_check = release_ebs_check;
+  log_message.realease_ebs_check = release_ebs_check;
   log_message.steer_dead = steer_dead;
   log_message.pc_dead = pc_dead;
   log_message.inversor_dead = inversor_dead;
@@ -664,6 +673,25 @@ void RosCan::rl_rpm_publisher(const unsigned char msg[8]) {
   message.rl_rpm = rlRPM;
   // RCLCPP_DEBUG(this->get_logger(), "Received RL RPM: %f", rlRPM);
   rl_rpm_pub_->publish(message);
+
+}
+
+void RosCan::fr_rpm_publisher(const unsigned char msg[8]) {
+  float frRPM = ((msg[4] << 24) | (msg[3] << 16) | (msg[2] << 8) | msg[1]) / 100.0f;
+  auto message = custom_interfaces::msg::WheelRPM();
+  message.header.stamp = this->get_clock()->now();
+  message.fr_rpm = frRPM;
+  // RCLCPP_DEBUG(this->get_logger(), "Received FR RPM: %f", frRPM);
+  fr_rpm_pub_->publish(message);
+}
+
+void RosCan::fl_rpm_publisher(const unsigned char msg[8]) {
+  float flRPM = ((msg[4] << 24) | (msg[3] << 16) | (msg[2] << 8) | msg[1]) / 100.0f;
+  auto message = custom_interfaces::msg::WheelRPM();
+  message.header.stamp = this->get_clock()->now();
+  message.fl_rpm = flRPM;
+  // RCLCPP_DEBUG(this->get_logger(), "Received FL RPM: %f", flRPM);
+  fl_rpm_pub_->publish(message);
 }
 
 void RosCan::battery_voltage_callback(const unsigned char msg[8]) {
@@ -710,9 +738,15 @@ void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
 RosCan::~RosCan() {
   RCLCPP_INFO(this->get_logger(), "Shutting down CAN interface");
 
-  if (hnd_ >= 0) {
-    canBusOff(hnd_);
-    canClose(hnd_);
-    hnd_ = -1;
+  if (hnd0_ >= 0) {
+    canBusOff(hnd0_);
+    canClose(hnd0_);
+    hnd0_ = -1;
+  }
+
+    if (hnd1_ >= 0) {
+    canBusOff(hnd1_);
+    canClose(hnd1_);
+    hnd1_ = -1;
   }
 }

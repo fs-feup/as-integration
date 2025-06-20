@@ -47,6 +47,11 @@ private:
       rl_rpm_pub_;  ///< Publisher for rear left wheel RPM
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
       rr_rpm_pub_;  ///< Publisher for rear right wheel RPM
+
+  rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
+      fl_rpm_pub_;  ///< Publisher for front left wheel RPM
+  rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
+      fr_rpm_pub_;  ///< Publisher for front right wheel RPM
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
       motor_rpm_pub_;  ///< Publisher for motor RPM
   rclcpp::Publisher<custom_interfaces::msg::MasterLog>::SharedPtr
@@ -187,6 +192,18 @@ private:
    * @param msg CAN message data
    */
   void rl_rpm_publisher(const unsigned char msg[8]);
+
+ /**
+  * @brief Publishes the front right RPM to ROS.
+  * @param msg CAN message data
+  */
+  void fr_rpm_publisher(const unsigned char msg[8]);
+
+ /**
+  * @brief Publishes the front left RPM to ROS.
+  * @param msg CAN message data
+  */
+  void fl_rpm_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Receives hydraulic line pressure from CAN and processes it.

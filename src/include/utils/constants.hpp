@@ -27,6 +27,9 @@
  */
 #define TEENSY_RL_RPM_CODE 0x12
 
+#define FR_RPM_CODE 0x10
+#define FL_RPM_CODE 0x11
+
 /*
  * value of msg[0] for AS CU alive message
  */

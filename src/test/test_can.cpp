@@ -240,7 +240,7 @@ TEST_F(RosCanTest, TestCanInterpreterMasterStatusMission) {
  * and read the values published and verify them
  */
 TEST_F(RosCanTest, TestCanInterpreter_TEENSY_DASH_RR_RPM_CODE) {
-  unsigned char msg[8] = {TEENSY_DASH_RR_RPM_CODE, 0x1F, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00};
+  unsigned char msg[8] = {TEENSY_RR_RPM_CODE, 0x1F, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00};
   long id = TEENSY_DASH;
   unsigned int dlc = 8;
   unsigned int flag = 0;
