@@ -81,8 +81,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   hnd0_ = canOpenChannel(0, canOPEN_EXCLUSIVE);  // TODO: this will be used only for SAS
   hnd1_ = canOpenChannel(1, canOPEN_EXCLUSIVE);  // TODO: this is for everything else
   // Setup CAN parameters for the channel
-  stat_ = canSetBusParams(hnd0_, canBITRATE_1M, 0, 0, 4, 0, 0);    // check these values later
-  stat_ = canSetBusParams(hnd1_, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
+  stat_ = canSetBusParams(hnd0_, canBITRATE_500K, 0, 0, 4, 0, 0);    // check these values later
+  stat_ = canSetBusParams(hnd1_, canBITRATE_1M, 0, 0, 4, 0, 0);  // check these values later
 
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN parameters");
@@ -283,7 +283,8 @@ void RosCan::cubem_set_origin() {
 
   // Write the steering message to the CAN bus
   stat_ = can_lib_wrapper_->canWrite(hnd0_, id, steering_requestData, steering_dlc, flag);
-  if (stat_ != canOK) {
+  RCLCPP_INFO(this->get_logger(), "ORIGIN SET :)");
+if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering controller");
   }
 }
@@ -323,7 +324,7 @@ int RosCan::bosch_steering_angle_set_origin() {
     hnd0_ = canOpenChannel(0, canOPEN_CAN_FD);
     stat_ = canBusOn(hnd0_);
   } else if (busStatus.data == "OFF") {
-    stat_ = canBusOff(hnd0_);
+  stat_ = canBusOff(hnd0_);
     canClose(hnd0_);
   }
 }*/
@@ -339,7 +340,16 @@ void RosCan::can_sniffer() {
 
   // Read from channel 0
   stat_ = can_lib_wrapper_->canRead(hnd0_, &id, &msg, &dlc, &flag, &time);
+  //stat1_ = can_lib_wrapper_->canRead(hnd1_, &id, &msg, &dlc, &flag, &time);
+  if (stat_ != canOK){
+    stat_ = can_lib_wrapper_->canRead(hnd1_, &id, &msg, &dlc, &flag, &time);
+}
   while (stat_ == canOK) {
+    RCLCPP_INFO(this->get_logger(), "Before can interpreter 0");
+    can_interpreter(id, msg, dlc, flag, time);
+    RCLCPP_INFO(this->get_logger(), "After can interpreter 0");
+    stat_ = can_lib_wrapper_->canRead(hnd1_, &id, &msg, &dlc, &flag, &time);
+    RCLCPP_INFO(this->get_logger(), "After stat 0");
     can_interpreter(id, msg, dlc, flag, time);
     stat_ = can_lib_wrapper_->canRead(hnd0_, &id, &msg, &dlc, &flag, &time);
   }
@@ -347,8 +357,11 @@ void RosCan::can_sniffer() {
   // Read from channel 1
   stat_ = can_lib_wrapper_->canRead(hnd1_, &id, &msg, &dlc, &flag, &time);
   while (stat_ == canOK) {
+    RCLCPP_INFO(this->get_logger(), "Before can interpreter 1");
     can_interpreter(id, msg, dlc, flag, time);
+    RCLCPP_INFO(this->get_logger(), "After can interpreter 1");
     stat_ = can_lib_wrapper_->canRead(hnd1_, &id, &msg, &dlc, &flag, &time);
+    RCLCPP_INFO(this->get_logger(), "After stat 0");
   }
 }
 
@@ -372,7 +385,8 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
     }
 
     case TEENSY_DASH: {
-      dash_interpreter(msg);
+//      dash_interpreter(msg);
+      break;
     }
     case STEERING_CUBEM_ID: {
       steering_angle_cubem_publisher(msg);
@@ -584,12 +598,15 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
     this->cubem_set_origin();
   }
 
+   RCLCPP_INFO(this->get_logger(), "Parsing");
+
   int16_t angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
   int16_t speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
   int16_t current = (msg[4] << 8) | msg[5]; // Extract 16-bit motor current
   int8_t temperature = msg[6]; // Extract 8-bit motor temperature
   int8_t error = msg[7];  // Extract 8-bit motor error
 
+  RCLCPP_INFO(this->get_logger(), "Finish parsing Parsing");
 
   auto motor_message = custom_interfaces::msg::SteeringAngle();
   motor_message.header.stamp = this->get_clock()->now();
@@ -607,6 +624,8 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
   steering_motor_current->publish(current_msg);
   steering_motor_temperature->publish(temperature_msg);
   steering_motor_error->publish(error_msg);
+
+  RCLCPP_INFO(this->get_logger(), "Finish SENDING INFO");
 }
 
 void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
