@@ -227,4 +227,6 @@
 #define STEERING_LOWER_LIMIT_HEX_CHAR 0xee  // Limit for buffer[1] value
 #define STEERING_SECOND_LOWER_LIMIT_HEX_CHAR 0x30  // Limit for buffer[2] value
 
+#define CELL_TEMPS_BASE_ID 0x110
+
 #endif  // CONSTANTS_HPP

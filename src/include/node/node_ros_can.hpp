@@ -21,6 +21,7 @@
 #include "custom_interfaces/msg/temperature.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
+#include "custom_interfaces/msg/cells_temps.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/int8.hpp"
@@ -81,6 +82,9 @@ private:
       imu_acc_pub_;  ///< Publisher for IMU acceleration data
   rclcpp::Publisher<custom_interfaces::msg::YawPitchRoll>::SharedPtr
       imu_angular_velocity_pub_;  ///< Publisher for IMU angular velocity data
+
+  rclcpp::Subscriber<custom_interfaces::msg::CellsTemps>::SharedPtr
+      cells_temps_pub_;  ///< Subscriber for control commands
 
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF;  ///< Current operational state of the vehicle
@@ -260,6 +264,8 @@ private:
    * @param msg CAN message data
    */
   void dash_interpreter(const unsigned char msg[8]);
+
+  void can_interpreter_cells_temps(const unsigned char msg[8]);
 
   /**
    * @brief Publishes master log data.

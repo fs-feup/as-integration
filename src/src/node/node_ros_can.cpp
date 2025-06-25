@@ -391,9 +391,20 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
       can_interpreter_bamocar(msg);
       break;
     }
+    case CELL_TEMPS_BASE_ID: {
+      can_interpreter_cell_temps(msg);
+    }
     default:
       break;
   }
+}
+
+void RosCan::can_interpreter_cell_temps(const unsigned char msg[8]) {
+  custom_interfaces::msg::CellsTemps cells_temps_msg;
+  cells_temps_msg.min_temp = msg[1];
+  cells_temps_msg.max_temp = msg[2];
+  cells_temps_msg.avg_temp = msg[3];
+  cells_temps_pub_->publish(cells_temps_msg);
 }
 
 void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
