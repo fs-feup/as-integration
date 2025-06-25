@@ -376,7 +376,7 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
     }
 
     case TEENSY_DASH: {
-//      dash_interpreter(msg);
+      dash_interpreter(msg);
       break;
     }
     case STEERING_CUBEM_ID: {
@@ -463,11 +463,11 @@ void RosCan::dash_interpreter(const unsigned char msg[8]) {
       break;
     }
     case FR_RPM_CODE: {
-      fr_rpm_publisher(msg);
+      //fr_rpm_publisher(msg);
       break;
     }
     case FL_RPM_CODE: {
-      fl_rpm_publisher(msg);
+      //fl_rpm_publisher(msg);
       break;
     }
     default:
