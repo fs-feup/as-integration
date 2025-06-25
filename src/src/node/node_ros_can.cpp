@@ -156,7 +156,7 @@ void RosCan::send_steering_control(double steering_angle_command) {
   // DO NOT EVER EDIT THIS CODE BLOCK
   // CODE BLOCK START
   check_steering_safe(steering_requestData);  // DO NOT REMOVE EVER
-  stat_ = can_lib_wrapper_->canWrite(hnd0_, id, steering_requestData, steering_dlc, flag);
+  stat_ = can_lib_wrapper_->canWrite(hnd1_, id, steering_requestData, steering_dlc, flag);
   // CODE BLOCK END
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to write steering to CAN bus");
@@ -191,7 +191,7 @@ void RosCan::send_throttle_control(double throttle_value_ros) {
   // DO NOT EVER EDIT THIS CODE BLOCK
   // CODE BLOCK START
   check_throttle_safe(throttle_requestData);  // DO NOT REMOVE EVER
-  stat_ = can_lib_wrapper_->canWrite(hnd0_, throttle_id, throttle_requestData, throttle_dlc, flag);
+  stat_ = can_lib_wrapper_->canWrite(hnd1_, throttle_id, throttle_requestData, throttle_dlc, flag);
   // CODE BLOCK END
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to write throttle to CAN bus");
@@ -282,9 +282,9 @@ void RosCan::cubem_set_origin() {
   RCLCPP_INFO(this->get_logger(), "Setting origin of steering controller");
 
   // Write the steering message to the CAN bus
-  stat_ = can_lib_wrapper_->canWrite(hnd0_, id, steering_requestData, steering_dlc, flag);
+  stat_ = can_lib_wrapper_->canWrite(hnd1_, id, steering_requestData, steering_dlc, flag);
   RCLCPP_INFO(this->get_logger(), "ORIGIN SET :)");
-if (stat_ != canOK) {
+  if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering controller");
   }
 }
@@ -299,7 +299,7 @@ int RosCan::bosch_steering_angle_set_origin() {
   unsigned int flag = 0;
 
   // Reset previous origin
-  stat_ = canWrite(hnd1_, id, request_data, dlc, flag);
+  stat_ = canWrite(hnd0_, id, request_data, dlc, flag);
   if (stat_ != canOK) {
     return 1;
   }
@@ -309,7 +309,7 @@ int RosCan::bosch_steering_angle_set_origin() {
   request_data = static_cast<void *>(buffer);
 
   // Set new origin
-  stat_ = canWrite(hnd1_, id, request_data, dlc, flag);
+  stat_ = canWrite(hnd0_, id, request_data, dlc, flag);
   if (stat_ != canOK) {
     return 1;
   }
@@ -340,16 +340,7 @@ void RosCan::can_sniffer() {
 
   // Read from channel 0
   stat_ = can_lib_wrapper_->canRead(hnd0_, &id, &msg, &dlc, &flag, &time);
-  //stat1_ = can_lib_wrapper_->canRead(hnd1_, &id, &msg, &dlc, &flag, &time);
-  if (stat_ != canOK){
-    stat_ = can_lib_wrapper_->canRead(hnd1_, &id, &msg, &dlc, &flag, &time);
-}
   while (stat_ == canOK) {
-    RCLCPP_INFO(this->get_logger(), "Before can interpreter 0");
-    can_interpreter(id, msg, dlc, flag, time);
-    RCLCPP_INFO(this->get_logger(), "After can interpreter 0");
-    stat_ = can_lib_wrapper_->canRead(hnd1_, &id, &msg, &dlc, &flag, &time);
-    RCLCPP_INFO(this->get_logger(), "After stat 0");
     can_interpreter(id, msg, dlc, flag, time);
     stat_ = can_lib_wrapper_->canRead(hnd0_, &id, &msg, &dlc, &flag, &time);
   }
@@ -594,8 +585,9 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
   // When steering motor wakes up, set its origin
   if (!this->cubem_configuration_sent_) {
     this->cubem_configuration_sent_ = true;
-    bosch_steering_angle_set_origin();
+    //bosch_steering_angle_set_origin();
     this->cubem_set_origin();
+    RCLCPP_INFO(this->get_logger(), "New configuration sent!");
   }
 
    RCLCPP_INFO(this->get_logger(), "Parsing");
