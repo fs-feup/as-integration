@@ -61,6 +61,11 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
       "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
 
+  fr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>(
+      "/vehicle/fr_rpm", 10);
+  fl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>(
+      "/vehicle/fl_rpm", 10);
+
   // Services
   emergency_service_ = this->create_service<std_srvs::srv::Trigger>(
       "/as_srv/emergency",
@@ -390,7 +395,7 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
     }
 
     case TEENSY_DASH: {
-      //dash_interpreter(msg);
+      dash_interpreter(msg);
       break;
     }
     case STEERING_CUBEM_ID: {
@@ -481,7 +486,7 @@ void RosCan::dash_interpreter(const unsigned char msg[8]) {
       break;
     }
     case FR_RPM_CODE: {
-      //fr_rpm_publisher(msg);
+      fr_rpm_publisher(msg);
       break;
     }
     case FL_RPM_CODE: {
