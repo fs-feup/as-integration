@@ -226,5 +226,6 @@
 #define STEERING_SECOND_UPPER_LIMIT_HEX_CHAR 0xCF // Limit for buffer[2] value
 #define STEERING_LOWER_LIMIT_HEX_CHAR 0xee  // Limit for buffer[1] value
 #define STEERING_SECOND_LOWER_LIMIT_HEX_CHAR 0x30  // Limit for buffer[2] value
+#define BMS_THERMISTOR_ID 0x1839'F380
 
 #endif  // CONSTANTS_HPP

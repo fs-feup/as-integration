@@ -21,6 +21,7 @@
 #include "custom_interfaces/msg/temperature.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
+#include "custom_interfaces/msg/cells_temps.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/int8.hpp"
@@ -72,6 +73,8 @@ private:
       steering_motor_temperature;  // Publisher for Cube Mars Steering motor temperature
   rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
       steering_motor_error;  // Publisher for steering motor error
+
+    rclcpp::Publisher<custom_interfaces::msg::CellsTemps>::SharedPtr cells_temps_pub_;  ///< Subscriber for control commands
 
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
       hydraulic_line_pressure_publisher_;  ///< Publisher for hydraulic line pressure
@@ -150,6 +153,8 @@ private:
    */
   void can_interpreter(long id, const unsigned char msg[8], unsigned int, unsigned int,
                        unsigned long);
+
+  void can_interpreter_cells_temps(const unsigned char msg[8]);
 
   /**
    * @brief Publishes the current operational status to ROS.

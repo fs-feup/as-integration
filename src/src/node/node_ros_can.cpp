@@ -39,6 +39,11 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   bosch_steering_angle_publisher_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
       "/vehicle/bosch_steering_angle", 10);
 
+  cells_temps_pub_ = this->create_publisher<custom_interfaces::msg::CellsTemps>(
+    "vehicle/cells/temperature", 10
+
+  );
+
   steering_motor_state_pub_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
         "/vehicle/steering_motor_state", 10);
   steering_motor_temperature = this->create_publisher<std_msgs::msg::Int8>(
@@ -111,6 +116,15 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   sleep(1);
 }
 
+void RosCan::can_interpreter_cells_temps(const unsigned char msg[8]) {
+  RCLCPP_INFO(this->get_logger(),"Starting temps");
+  custom_interfaces::msg::CellsTemps cells_temps_msg;
+  cells_temps_msg.min_temp = msg[1];
+  cells_temps_msg.max_temp = msg[2];
+  cells_temps_msg.avg_temp = msg[3];
+  cells_temps_pub_->publish(cells_temps_msg);
+  RCLCPP_INFO(this->get_logger(),"Ending temps");
+}
 // -------------- ROS TO CAN --------------
 
 void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr msg) {
@@ -376,7 +390,7 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
     }
 
     case TEENSY_DASH: {
-      dash_interpreter(msg);
+      //dash_interpreter(msg);
       break;
     }
     case STEERING_CUBEM_ID: {
@@ -389,6 +403,10 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
     }
     case BAMO_RESPONSE_ID: {
       can_interpreter_bamocar(msg);
+      break;
+    }
+    case BMS_THERMISTOR_ID: {
+      can_interpreter_cells_temps(msg);
       break;
     }
     default:
