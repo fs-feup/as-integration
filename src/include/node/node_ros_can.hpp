@@ -21,11 +21,10 @@
 #include "custom_interfaces/msg/temperature.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
-
+#include "custom_interfaces/msg/cells_temps.hpp"
+#include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/int8.hpp"
-
-#include "rclcpp/rclcpp.hpp"
 
 /**
  * @class RosCan
@@ -49,6 +48,11 @@ private:
       rl_rpm_pub_;  ///< Publisher for rear left wheel RPM
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
       rr_rpm_pub_;  ///< Publisher for rear right wheel RPM
+
+  rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
+      fl_rpm_pub_;  ///< Publisher for front left wheel RPM
+  rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
+      fr_rpm_pub_;  ///< Publisher for front right wheel RPM
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
       motor_rpm_pub_;  ///< Publisher for motor RPM
   rclcpp::Publisher<custom_interfaces::msg::MasterLog>::SharedPtr
@@ -63,13 +67,15 @@ private:
 
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       steering_motor_state_pub_;  ///< Publisher for CubeM Motor Steering angle
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr 
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
       steering_motor_current;  // Publisher for CubeMars motor current
-  rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr 
+  rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
       steering_motor_temperature;  // Publisher for Cube Mars Steering motor temperature
   rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
-      steering_motor_error; // Publisher for steering motor error
-      
+      steering_motor_error;  // Publisher for steering motor error
+
+    rclcpp::Publisher<custom_interfaces::msg::CellsTemps>::SharedPtr cells_temps_pub_;  ///< Subscriber for control commands
+
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
       hydraulic_line_pressure_publisher_;  ///< Publisher for hydraulic line pressure
 
@@ -102,7 +108,8 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;            ///< Timer for periodic tasks
   rclcpp::TimerBase::SharedPtr timer_alive_msg_;  ///< Timer for sending alive messages
 
-  canHandle hnd_;  ///< Handle to the CAN channel
+  canHandle hnd0_;  ///< Handle to the CAN channel
+  canHandle hnd1_;  ///< Handle to the CAN channel
 
   canStatus stat_;  ///< Status of the last CANlib call
 
@@ -147,6 +154,8 @@ private:
   void can_interpreter(long id, const unsigned char msg[8], unsigned int, unsigned int,
                        unsigned long);
 
+  void can_interpreter_cells_temps(const unsigned char msg[8]);
+
   /**
    * @brief Publishes the current operational status to ROS.
    */
@@ -188,6 +197,18 @@ private:
    * @param msg CAN message data
    */
   void rl_rpm_publisher(const unsigned char msg[8]);
+
+ /**
+  * @brief Publishes the front right RPM to ROS.
+  * @param msg CAN message data
+  */
+  void fr_rpm_publisher(const unsigned char msg[8]);
+
+ /**
+  * @brief Publishes the front left RPM to ROS.
+  * @param msg CAN message data
+  */
+  void fl_rpm_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Receives hydraulic line pressure from CAN and processes it.
@@ -232,11 +253,18 @@ private:
   void can_interpreter_bamocar(const unsigned char msg[8]);
 
   /**
-   * @brief Interprets the master status CAN message.
+   * @brief Interprets the master CAN messages.
    *
    * @param msg CAN message data
    */
-  void can_interpreter_master_status(const unsigned char msg[8]);
+  void can_interpreter_master(const unsigned char msg[8]);
+
+  /**
+   * @brief Interprets the dash CAN messages.
+   *
+   * @param msg CAN message data
+   */
+  void dash_interpreter(const unsigned char msg[8]);
 
   /**
    * @brief Publishes master log data.
@@ -336,7 +364,7 @@ public:
   FRIEND_TEST(RosCanTest, TestImuAccPublisher);
   FRIEND_TEST(RosCanTest, TestImuGyroPublisher);
   FRIEND_TEST(RosCanTest, TestCanInterpreterMasterStatusMission);
-  FRIEND_TEST(RosCanTest, TestCanInterpreter_TEENSY_C1_RR_RPM_CODE);
+  FRIEND_TEST(RosCanTest, TestCanInterpreter_TEENSY_DASH_RR_RPM_CODE);
   FRIEND_TEST(RosCanTest, TestOutOfRangeUpperSteeringThrottle);
   FRIEND_TEST(RosCanTest, TestOutOfRangeLowerSteeringThrottle);
   FRIEND_TEST(RosCanTest, TestOutOfRangeSingleSteeringThrottle);

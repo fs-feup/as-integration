@@ -2,6 +2,7 @@
 #define SAFETY_MECHANISMS_HPP
 
 #include <assert.h>
+
 #include <algorithm>
 #include <cmath>
 #include <rclcpp/rclcpp.hpp>
@@ -53,7 +54,7 @@ void check_throttle_safe(void *throttle_payload_data) {
 }
 
 /**
- * @brief Determines the max torque for braking 
+ * @brief Determines the max torque for braking
  * given the current rpm of the motor
  * and battery voltage. Follows the formula established in latex
  *
@@ -99,28 +100,28 @@ bool checkCRC8(const unsigned char msg[8]) {
 
 /**
  * @brief Calculates and verifies the CRC8 checksum for a message based on the SAE J1850 protocol.
- * 
- * @param msg The input message, an array of 8 bytes. The first 7 bytes contain the data, 
+ *
+ * @param msg The input message, an array of 8 bytes. The first 7 bytes contain the data,
  * and the 8th byte contains the received CRC value.
- * @return bool True if the calculated CRC matches the received CRC, indicating the message 
+ * @return bool True if the calculated CRC matches the received CRC, indicating the message
  * integrity is valid. False if there is a mismatch.
  */
 bool calculateCRC8_SAE_J1850(const unsigned char msg[8]) {
-    unsigned char received_crc = msg[7]; 
-    unsigned char calculated_crc = CRC8_SAE_J1850_INITIAL_CRC;
-    unsigned char polynomial = CRC8_SAE_J1850_POLYNOMIAL;
-    
-    for (int i = 0; i < 7; i++) {
-        calculated_crc ^= msg[i];
-        for (int j = 0; j < 8; ++j) {
-            if (calculated_crc & 0x80) {
-                calculated_crc = (calculated_crc << 1) ^ polynomial;
-            } else {
-                calculated_crc <<= 1;
-            }
-        }
+  unsigned char received_crc = msg[7];
+  unsigned char calculated_crc = CRC8_SAE_J1850_INITIAL_CRC;
+  unsigned char polynomial = CRC8_SAE_J1850_POLYNOMIAL;
+
+  for (int i = 0; i < 7; i++) {
+    calculated_crc ^= msg[i];
+    for (int j = 0; j < 8; ++j) {
+      if (calculated_crc & 0x80) {
+        calculated_crc = (calculated_crc << 1) ^ polynomial;
+      } else {
+        calculated_crc <<= 1;
+      }
     }
-    return calculated_crc == received_crc;
+  }
+  return calculated_crc == received_crc;
 }
 
 #endif  // SAFETY_MECHANISMS_HPP

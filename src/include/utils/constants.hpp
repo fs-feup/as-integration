@@ -20,12 +20,15 @@
 /*
  * value of msg[0] for RR RPM Code
  */
-#define TEENSY_C1_RR_RPM_CODE 0x11
+#define TEENSY_RR_RPM_CODE 0x11
 
 /*
  * value of msg[0] for RL RPM Code
  */
-#define TEENSY_C1_RL_RPM_CODE 0x12
+#define TEENSY_RL_RPM_CODE 0x12
+
+#define FR_RPM_CODE 0x10
+#define FL_RPM_CODE 0x11
 
 /*
  * value of msg[0] for AS CU alive message
@@ -45,12 +48,12 @@
 /**
  * Payload of the single byte message to reset the steering angle sensor
  */
-#define SET_ORIGIN_BOSCH_STEERING_ANGLE_RESET 0x05
+#define SET_ORIGIN_BOSCH_STEERING_ANGLE_RESET 0x50
 
 /**
  * Payload of the single byte message to set the steering angle sensor origin
  */
-#define SET_ORIGIN_BOSCH_STEERING_ANGLE_SET 0x03
+#define SET_ORIGIN_BOSCH_STEERING_ANGLE_SET 0x30
 
 /**
  * Message code for Bamocar battery voltage
@@ -87,13 +90,13 @@
  * Current AS State
  * left wheel rpm
  */
-#define MASTER_STATUS 0x300
+#define MASTER_ID 0x300
 
 /*
  * ID used for:
  * Left wheel rpm
  */
-#define TEENSY_C1 0x123
+#define TEENSY_DASH 0x132
 
 /**
  * ID used for
@@ -223,5 +226,6 @@
 #define STEERING_SECOND_UPPER_LIMIT_HEX_CHAR 0xCF // Limit for buffer[2] value
 #define STEERING_LOWER_LIMIT_HEX_CHAR 0xee  // Limit for buffer[1] value
 #define STEERING_SECOND_LOWER_LIMIT_HEX_CHAR 0x30  // Limit for buffer[2] value
+#define BMS_THERMISTOR_ID 0x1839'F380
 
 #endif  // CONSTANTS_HPP
