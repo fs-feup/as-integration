@@ -175,10 +175,10 @@ void RosCan::send_steering_control(double steering_angle_command) {
   // DO NOT EVER EDIT THIS CODE BLOCK
   // CODE BLOCK START
   check_steering_safe(steering_requestData);  // DO NOT REMOVE EVER
-  stat_ = can_lib_wrapper_->canWrite(hnd1_, id, steering_requestData, steering_dlc, flag);
+  // stat_ = can_lib_wrapper_->canWrite(hnd1_, id, steering_requestData, steering_dlc, flag);
   // CODE BLOCK END
   if (stat_ != canOK) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to write steering to CAN bus");
+    RCLCPP_ERROR(this->get_logger(), "Failed to write steering to CAN bus: %d", stat_);
   } else {
     RCLCPP_DEBUG(this->get_logger(), "Write steering to CAN bus success: %f (degrees)",
                  steering_angle_command);
@@ -197,6 +197,7 @@ void RosCan::send_throttle_control(double throttle_value_ros) {
   }
 
   RCLCPP_DEBUG(this->get_logger(), "Command after limiting: %d", throttle_command);
+  throttle_command *= 0.25;
   long throttle_id = BAMO_COMMAND_ID;
   unsigned char buffer_throttle[3];
   buffer_throttle[0] = TORQUE_COMMAND_BAMO_BYTE;
@@ -213,7 +214,7 @@ void RosCan::send_throttle_control(double throttle_value_ros) {
   stat_ = can_lib_wrapper_->canWrite(hnd1_, throttle_id, throttle_requestData, throttle_dlc, flag);
   // CODE BLOCK END
   if (stat_ != canOK) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to write throttle to CAN bus");
+    RCLCPP_ERROR(this->get_logger(), "Failed to write throttle to CAN bus: %d ", stat_);
   } else {
     RCLCPP_DEBUG(this->get_logger(), "Write throttle to CAN bus success: %f", throttle_value_ros);
   }
@@ -234,10 +235,10 @@ void RosCan::emergency_callback(const std::shared_ptr<std_srvs::srv::Trigger::Re
   unsigned int flag = 0;
   RCLCPP_INFO(this->get_logger(), "Emergency signal received, sending to CAN");
 
-  stat_ = can_lib_wrapper_->canWrite(hnd0_, id, requestData, dlc, flag);
-  if (stat_ != canOK) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
-  }
+  //stat_ = can_lib_wrapper_->canWrite(hnd0_, id, requestData, dlc, flag);
+  //if (stat_ != canOK) {
+  //  RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
+  //}
 }
 
 void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
@@ -255,10 +256,10 @@ void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trig
   unsigned int flag = 0;
   RCLCPP_INFO(this->get_logger(), "Mission finished signal received, sending to CAN");
 
-  stat_ = can_lib_wrapper_->canWrite(hnd0_, id, requestData, dlc, flag);
-  if (stat_ != canOK) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
-  }
+  //stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
+  //if (stat_ != canOK) {
+  //  RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
+  //}
 }
 
 void RosCan::bosch_sa_reset_callack(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
@@ -285,7 +286,7 @@ void RosCan::alive_msg_callback() {
   unsigned int flag = 0;
   // RCLCPP_DEBUG(this->get_logger(), "Sending alive message from AS_CU_NODE");
 
-  stat_ = can_lib_wrapper_->canWrite(hnd0_, id, msg, dlc, flag);
+  stat_ = can_lib_wrapper_->canWrite(hnd1_, id, msg, dlc, flag);
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to write alive message to CAN bus");
   }
@@ -367,11 +368,8 @@ void RosCan::can_sniffer() {
   // Read from channel 1
   stat_ = can_lib_wrapper_->canRead(hnd1_, &id, &msg, &dlc, &flag, &time);
   while (stat_ == canOK) {
-    RCLCPP_INFO(this->get_logger(), "Before can interpreter 1");
     can_interpreter(id, msg, dlc, flag, time);
-    RCLCPP_INFO(this->get_logger(), "After can interpreter 1");
     stat_ = can_lib_wrapper_->canRead(hnd1_, &id, &msg, &dlc, &flag, &time);
-    RCLCPP_INFO(this->get_logger(), "After stat 0");
   }
 }
 
@@ -443,6 +441,8 @@ void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
 }
 
 void RosCan::can_interpreter_master(const unsigned char msg[8]) {
+  RCLCPP_INFO(this->get_logger(), "Received Master message"); 
+  RCLCPP_INFO(this->get_logger(), "Message: %x %x %x %x %x %x %x %x", msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6],msg[7]);
   switch (msg[0]) {
     case MASTER_AS_STATE_CODE: {
       if (msg[1] == 3) {  // If AS State == Driving
@@ -490,7 +490,7 @@ void RosCan::dash_interpreter(const unsigned char msg[8]) {
       break;
     }
     case FL_RPM_CODE: {
-      //fl_rpm_publisher(msg);
+      fl_rpm_publisher(msg);
       break;
     }
     default:
@@ -613,15 +613,12 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
     RCLCPP_INFO(this->get_logger(), "New configuration sent!");
   }
 
-   RCLCPP_INFO(this->get_logger(), "Parsing");
-
   int16_t angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
   int16_t speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
   int16_t current = (msg[4] << 8) | msg[5]; // Extract 16-bit motor current
   int8_t temperature = msg[6]; // Extract 8-bit motor temperature
   int8_t error = msg[7];  // Extract 8-bit motor error
 
-  RCLCPP_INFO(this->get_logger(), "Finish parsing Parsing");
 
   auto motor_message = custom_interfaces::msg::SteeringAngle();
   motor_message.header.stamp = this->get_clock()->now();
@@ -639,8 +636,6 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
   steering_motor_current->publish(current_msg);
   steering_motor_temperature->publish(temperature_msg);
   steering_motor_error->publish(error_msg);
-
-  RCLCPP_INFO(this->get_logger(), "Finish SENDING INFO");
 }
 
 void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
@@ -676,7 +671,6 @@ void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
 
   angle = angle * M_PI / 180;
   this->steering_angle_ = -angle;  // Used for initial adjustment
-  RCLCPP_INFO(this->get_logger(), "Steering angle: %f", this->steering_angle_);
 
   double steering_angle_wheels;
   transform_steering_angle_reading(this->steering_angle_, steering_angle_wheels);
@@ -684,8 +678,8 @@ void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
   // Send message
   auto message = custom_interfaces::msg::SteeringAngle();
   message.header.stamp = this->get_clock()->now();
-  message.steering_angle = steering_angle_wheels;
-  message.steering_speed = speed;
+  message.steering_angle = -steering_angle_wheels;
+  message.steering_speed = -speed;
   // RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (radians): %f",
   // this->steering_angle_);
   bosch_steering_angle_publisher_->publish(message);
@@ -740,7 +734,7 @@ void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
   message.header.stamp = this->get_clock()->now();
   message.rl_rpm = this->motor_speed_ * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE;
   message.rr_rpm = this->motor_speed_ * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE;
-  RCLCPP_DEBUG(this->get_logger(), "Received motor speed from Bamocar: %d", this->motor_speed_);
+  RCLCPP_INFO(this->get_logger(), "Received motor speed from Bamocar: %d", this->motor_speed_);
   motor_rpm_pub_->publish(message);
 }
 void RosCan::motor_temp_publisher(const unsigned char msg[8]) {

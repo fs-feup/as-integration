@@ -217,7 +217,7 @@
 #define BAMOCAR_MAX_RPM 6500
 #define BAMOCAR_MAX_CURRENT 73
 #define BAMOCAR_MAX_VOLTAGE 600
-#define BAMOCAR_MAX_SCALE 32767              // Max of the messages from the bamocar
+#define BAMOCAR_MAX_SCALE 32760              // Max of the messages from the bamocar
 #define MAX_ACCUMULATOR_CHARGING_CURRENT 30  // In Amps, as per documentation
 
 #define STEERING_UPPER_LIMIT 0.392699       // Input Limits
