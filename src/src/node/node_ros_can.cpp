@@ -175,7 +175,7 @@ void RosCan::send_steering_control(double steering_angle_command) {
   // DO NOT EVER EDIT THIS CODE BLOCK
   // CODE BLOCK START
   check_steering_safe(steering_requestData);  // DO NOT REMOVE EVER
-  // stat_ = can_lib_wrapper_->canWrite(hnd1_, id, steering_requestData, steering_dlc, flag);
+  stat_ = can_lib_wrapper_->canWrite(hnd1_, id, steering_requestData, steering_dlc, flag);
   // CODE BLOCK END
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to write steering to CAN bus: %d", stat_);
@@ -197,7 +197,6 @@ void RosCan::send_throttle_control(double throttle_value_ros) {
   }
 
   RCLCPP_DEBUG(this->get_logger(), "Command after limiting: %d", throttle_command);
-  throttle_command *= 0.25;
   long throttle_id = BAMO_COMMAND_ID;
   unsigned char buffer_throttle[3];
   buffer_throttle[0] = TORQUE_COMMAND_BAMO_BYTE;
@@ -678,8 +677,8 @@ void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
   // Send message
   auto message = custom_interfaces::msg::SteeringAngle();
   message.header.stamp = this->get_clock()->now();
-  message.steering_angle = -steering_angle_wheels;
-  message.steering_speed = -speed;
+  message.steering_angle = steering_angle_wheels;
+  message.steering_speed = speed;
   // RCLCPP_DEBUG(this->get_logger(), "Received Bosch Steering Angle (radians): %f",
   // this->steering_angle_);
   bosch_steering_angle_publisher_->publish(message);
