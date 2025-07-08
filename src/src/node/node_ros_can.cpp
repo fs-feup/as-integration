@@ -41,8 +41,10 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
 
   cells_temps_pub_ = this->create_publisher<custom_interfaces::msg::CellsTemps>(
     "vehicle/cells/temperature", 10
-
   );
+
+  _bamocar_current_pub = this->create_publisher<std_msgs::msg::Int32>(
+      "/vehicle/bamocar_current", 10);
 
   steering_motor_state_pub_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
         "/vehicle/steering_motor_state", 10);
@@ -416,6 +418,15 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
   }
 }
 
+void RosCan::can_interpreter_bamocar_current(const unsigned char msg[8]) {
+  std_msgs::msg::Int32 temp;
+  temp.data = (msg[2] << 8) | msg[1];
+  _bamocar_current_pub->publish(temp);
+}
+
+
+
+
 void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
   switch (msg[0]) {
     case BAMOCAR_BATTERY_VOLTAGE_CODE: {
@@ -432,6 +443,11 @@ void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
     }
     case BAMOCAR_INVERTER_TEMP_CODE: {
       inverter_temp_publisher(msg);
+      break;
+    }
+
+    case BAMO_CURRENT_ID: {
+      can_interpreter_bamocar_current(msg);
       break;
     }
     default:

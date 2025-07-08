@@ -25,6 +25,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/int8.hpp"
+#include "std_msgs/msg/int32.hpp"
 
 /**
  * @class RosCan
@@ -73,6 +74,8 @@ private:
       steering_motor_temperature;  // Publisher for Cube Mars Steering motor temperature
   rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
       steering_motor_error;  // Publisher for steering motor error
+
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr _bamocar_current_pub;
 
     rclcpp::Publisher<custom_interfaces::msg::CellsTemps>::SharedPtr cells_temps_pub_;  ///< Subscriber for control commands
 
@@ -155,6 +158,8 @@ private:
                        unsigned long);
 
   void can_interpreter_cells_temps(const unsigned char msg[8]);
+
+  void can_interpreter_bamocar_current(const unsigned char msg[8]);
 
   /**
    * @brief Publishes the current operational status to ROS.

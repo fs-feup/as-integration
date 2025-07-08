@@ -146,6 +146,8 @@
  */
 #define BAMO_RESPONSE_ID 0x181
 
+#define BAMO_CURRENT_ID 0x20
+
 /**
  * ID used for AS_CU messages
  */
