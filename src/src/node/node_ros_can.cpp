@@ -62,13 +62,15 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   fl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/fl_rpm", 10);
 
   battery_voltage_pub_ =
-      this->create_publisher<std_msgs::msg::Float64>("/vehicle/battery_voltage", 10);
+      this->create_publisher<std_msgs::msg::Int32>("/vehicle/battery_voltage", 10);
 
   bms_errors_pub_ =
       this->create_publisher<custom_interfaces::msg::BmsErrors>("/vehicle/battery_errors", 10);
 
   apps_higher_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/apps/higher", 10);
   apps_lower_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/apps/lower", 10);
+
+  implausability_pub_ = this->create_publisher<std_msgs::msg::Bool>("/vehicle/implausability", 10);
 
   // Subscritpions
   control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
@@ -524,6 +526,10 @@ void RosCan::dash_interpreter(const unsigned char msg[8]) {
       apps_lower_publisher(msg);
       break;
     }
+    case DRIVING_STATE: {
+      implausability_publisher(msg);
+      break;
+    }
     default:
       break;  // add error message
   }
@@ -754,8 +760,7 @@ void RosCan::fl_rpm_publisher(const unsigned char msg[8]) {
 void RosCan::battery_voltage_publisher(const unsigned char msg[8]) {
   this->battery_voltage_ = (msg[2] << 8) | msg[1];
   auto message = std_msgs::msg::Int32();
-  message.header.stamp = this->get_clock()->now();
-  message.voltage = this->battery_voltage_ * BAMOCAR_MAX_VOLTAGE / BAMOCAR_MAX_SCALE;
+  message.data = this->battery_voltage_ * BAMOCAR_MAX_VOLTAGE / BAMOCAR_MAX_SCALE;
   RCLCPP_DEBUG(this->get_logger(), "Received voltage from Bamocar: %d", this->battery_voltage_);
   battery_voltage_pub_->publish(message);
 }
@@ -852,6 +857,14 @@ void RosCan::apps_lower_publisher(const unsigned char msg[8]) {
   message.data = apps_lower_value;
 
   apps_lower_pub_->publish(message);
+}
+
+void RosCan::implausability_publisher(const unsigned char msg[8]) {
+  bool implausibility = (msg[2] != 0);
+  auto message = std_msgs::msg::Bool();
+  message.data = implausibility;
+
+  implausability_pub_->publish(message);
 }
 
 RosCan::~RosCan() {

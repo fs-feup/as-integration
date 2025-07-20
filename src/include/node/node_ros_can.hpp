@@ -24,6 +24,7 @@
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/int32.hpp"
 #include "std_msgs/msg/int8.hpp"
@@ -66,7 +67,7 @@ private:
       inverter_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;  ///< Publisher for Bosch steering angle
-  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
       battery_voltage_pub_;  ///< Publisher for battery voltage
   rclcpp::Publisher<custom_interfaces::msg::BmsErrors>::SharedPtr
       bms_errors_pub_;  ///< Publisher for BMS errors
@@ -74,6 +75,8 @@ private:
       apps_higher_pub_;  ///< Publisher for APPs higher value
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
       apps_lower_pub_;  ///< Publisher for APPs lower value
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr
+      implausability_pub_;  ///< Publisher for implausibility status
 
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       steering_motor_state_pub_;  ///< Publisher for CubeM Motor Steering angle
@@ -382,6 +385,13 @@ private:
    * @param msg CAN message data
    */
   void apps_lower_publisher(const unsigned char msg[8]);
+
+  /**
+   * @brief Publishes the implausibility status to ROS.
+   *
+   * @param msg CAN message data
+   */
+  void implausability_publisher(const unsigned char msg[8]);
 
 public:
   /**

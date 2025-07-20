@@ -188,6 +188,12 @@
  */
 #define APPS_LOWER 0x21
 
+/**
+ * ID used for:
+ * Driving State
+ */
+#define DRIVING_STATE 0x22
+
 // -------------- SENSORS CONSTANTS --------------
 
 /*
