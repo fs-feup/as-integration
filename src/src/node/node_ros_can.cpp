@@ -57,14 +57,17 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       this->create_publisher<custom_interfaces::msg::HydraulicLinePressure>(
           "/vehicle/hydraulic_line_pressure", 10);
 
-  // Subscritpions
-  control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
-      "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
-
   fr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>(
       "/vehicle/fr_rpm", 10);
   fl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>(
       "/vehicle/fl_rpm", 10);
+
+  battery_voltage_pub_ = this->create_publisher<std_msgs::msg::Int32>(
+      "/vehicle/battery_voltage", 10);
+  
+  // Subscritpions
+  control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
+      "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
 
   // Services
   emergency_service_ = this->create_service<std_srvs::srv::Trigger>(
@@ -422,7 +425,7 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
 void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
   switch (msg[0]) {
     case BAMOCAR_BATTERY_VOLTAGE_CODE: {
-      battery_voltage_callback(msg);
+      battery_voltage_publisher(msg);
       break;
     }
     case BAMOCAR_MOTOR_SPEED_CODE: {
@@ -728,9 +731,13 @@ void RosCan::fl_rpm_publisher(const unsigned char msg[8]) {
   fl_rpm_pub_->publish(message);
 }
 
-void RosCan::battery_voltage_callback(const unsigned char msg[8]) {
+void RosCan::battery_voltage_publisher(const unsigned char msg[8]) {
   this->battery_voltage_ = (msg[2] << 8) | msg[1];
-  // RCLCPP_DEBUG(this->get_logger(), "Received voltage from Bamocar: %d", this->battery_voltage_);
+  auto message = std_msgs::msg::Int32();
+  message.header.stamp = this->get_clock()->now();
+  message.voltage = this->battery_voltage_ * BAMOCAR_MAX_VOLTAGE / BAMOCAR_MAX_SCALE;
+  RCLCPP_DEBUG(this->get_logger(), "Received voltage from Bamocar: %d", this->battery_voltage_);
+  battery_voltage_pub_->publish(message);
 }
 
 void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
