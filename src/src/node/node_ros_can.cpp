@@ -61,8 +61,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   fr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/fr_rpm", 10);
   fl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/fl_rpm", 10);
 
-  battery_voltage_pub_ =
-      this->create_publisher<std_msgs::msg::Int32>("/vehicle/battery_voltage", 10);
+  inverter_voltage_pub_ =
+      this->create_publisher<std_msgs::msg::Int32>("/vehicle/inverter_voltage", 10);
 
   bms_errors_pub_ =
       this->create_publisher<custom_interfaces::msg::BmsErrors>("/vehicle/battery_errors", 10);
@@ -204,7 +204,7 @@ void RosCan::send_throttle_control(double throttle_value_ros) {
   // Limit brake command if needed
   if (throttle_command < 0) {
     throttle_command = std::max(
-        throttle_command, max_torque_dynamic_limits(this->battery_voltage_, this->motor_speed_));
+        throttle_command, max_torque_dynamic_limits(this->inverter_voltage_, this->motor_speed_));
   }
 
   RCLCPP_DEBUG(this->get_logger(), "Command after limiting: %d", throttle_command);
@@ -440,7 +440,7 @@ void RosCan::can_interpreter_bamocar_current(const unsigned char msg[8]) {
 void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
   switch (msg[0]) {
     case BAMOCAR_BATTERY_VOLTAGE_CODE: {
-      battery_voltage_publisher(msg);
+      inverter_voltage_publisher(msg);
       break;
     }
     case BAMOCAR_MOTOR_SPEED_CODE: {
@@ -577,10 +577,12 @@ void RosCan::master_logs_2_publisher(const unsigned char msg[8]) {
   uint32_t dc_voltage = (msg[1] << 24) | (msg[2] << 16) | (msg[3] << 8) | msg[4];
   bool pneumatic1 = msg[5] & 0x01;
   bool pneumatic2 = msg[6] & 0x01;
+  bool master_shutdown_circuit_close = msg[7] & 0x01;
   custom_interfaces::msg::MasterLog2 log_message_2;
   log_message_2.dc_voltage = dc_voltage;
-  // log_message_2.pneumatic1 = pneumatic1;
-  // log_message_2.pneumatic2 = pneumatic2;
+  log_message_2.pneumatic1 = pneumatic1;
+  log_message_2.pneumatic2 = pneumatic2;
+  log_message_2.master_shutdown_circuit_close = master_shutdown_circuit_close;
 
   master_log_pub_2_->publish(log_message_2);
 }
@@ -758,12 +760,12 @@ void RosCan::fl_rpm_publisher(const unsigned char msg[8]) {
   fl_rpm_pub_->publish(message);
 }
 
-void RosCan::battery_voltage_publisher(const unsigned char msg[8]) {
-  this->battery_voltage_ = (msg[2] << 8) | msg[1];
+void RosCan::inverter_voltage_publisher(const unsigned char msg[8]) {
+  this->inverter_voltage_ = (msg[2] << 8) | msg[1];
   auto message = std_msgs::msg::Int32();
-  message.data = this->battery_voltage_ * BAMOCAR_MAX_VOLTAGE / BAMOCAR_MAX_SCALE;
-  RCLCPP_DEBUG(this->get_logger(), "Received voltage from Bamocar: %d", this->battery_voltage_);
-  battery_voltage_pub_->publish(message);
+  message.data = this->inverter_voltage_ * BAMOCAR_MAX_VOLTAGE / BAMOCAR_MAX_SCALE;
+  RCLCPP_DEBUG(this->get_logger(), "Received voltage from Bamocar: %d", this->inverter_voltage_);
+  inverter_voltage_pub_->publish(message);
 }
 
 void RosCan::motor_speed_publisher(const unsigned char msg[8]) {

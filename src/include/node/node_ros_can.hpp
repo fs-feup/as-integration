@@ -68,7 +68,7 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;  ///< Publisher for Bosch steering angle
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
-      battery_voltage_pub_;  ///< Publisher for battery voltage
+      inverter_voltage_pub_;  ///< Publisher for inverter voltage(bamocar)
   rclcpp::Publisher<custom_interfaces::msg::BmsErrors>::SharedPtr
       bms_errors_pub_;  ///< Publisher for BMS errors
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
@@ -105,7 +105,7 @@ private:
 
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF;  ///< Current operational state of the vehicle
-  int battery_voltage_ = 0;              ///< Battery voltage in volts, in Bamocar scale
+  int inverter_voltage_ = 0;             ///< Battery voltage in volts, in Bamocar scale
   int motor_speed_ = 0;                  ///< Motor speed in RPM, in Bamocar scale
   int motor_temp_ = 0;                   ///< Motor temp
   int inverter_temp_ = 0;                ///< Inverter temp
@@ -263,7 +263,7 @@ private:
    *
    * @param msg CAN message data
    */
-  void battery_voltage_publisher(const unsigned char msg[8]);
+  void inverter_voltage_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Interprets the BAMOCAR CAN message.
