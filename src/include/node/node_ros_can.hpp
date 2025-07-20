@@ -65,6 +65,8 @@ private:
       inverter_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;  ///< Publisher for Bosch steering angle
+  rclcpp::Publisher<std_msgs::msg::Int32::SharedPtr 
+      battery_voltage_pub_;  ///< Publisher for battery voltage
 
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       steering_motor_state_pub_;  ///< Publisher for CubeM Motor Steering angle
@@ -248,7 +250,7 @@ private:
    *
    * @param msg CAN message data
    */
-  void battery_voltage_callback(const unsigned char msg[8]);
+  void battery_voltage_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Interprets the BAMOCAR CAN message.
