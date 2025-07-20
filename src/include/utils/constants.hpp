@@ -174,7 +174,19 @@
  * ID used for:
  * BMS Errors
  */
-#define BMS_ERRORS_ID 0x123;
+#define BMS_ERRORS_ID 0x123
+
+/**
+ * ID used for:
+ * APPS Higher
+ */
+#define APPS_HIGHER 0x20
+
+/**
+ * ID used for:
+ * APPS Lower
+ */
+#define APPS_LOWER 0x21
 
 // -------------- SENSORS CONSTANTS --------------
 

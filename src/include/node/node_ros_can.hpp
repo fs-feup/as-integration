@@ -70,6 +70,10 @@ private:
       battery_voltage_pub_;  ///< Publisher for battery voltage
   rclcpp::Publisher<custom_interfaces::msg::BmsErrors>::SharedPtr
       bms_errors_pub_;  ///< Publisher for BMS errors
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
+      apps_higher_pub_;  ///< Publisher for APPs higher value
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
+      apps_lower_pub_;  ///< Publisher for APPs lower value
 
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       steering_motor_state_pub_;  ///< Publisher for CubeM Motor Steering angle
@@ -364,6 +368,20 @@ private:
    * @param dlc Data length code
    */
   void bms_errors_publisher(const unsigned char msg[8], unsigned int dlc);
+
+  /**
+   * @brief Publishes the APPs higher value to ROS.
+   *
+   * @param msg CAN message data
+   */
+  void apps_higher_publisher(const unsigned char msg[8]);
+
+  /**
+   * @brief Publishes the APPs lower value to ROS.
+   *
+   * @param msg CAN message data
+   */
+  void apps_lower_publisher(const unsigned char msg[8]);
 
 public:
   /**

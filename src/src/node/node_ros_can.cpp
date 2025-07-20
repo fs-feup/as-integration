@@ -65,7 +65,10 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       this->create_publisher<std_msgs::msg::Float64>("/vehicle/battery_voltage", 10);
 
   bms_errors_pub_ =
-      this->create_publisher<custom_interfaces::msg::BmsErrors>("/vehicle/battery/errors", 10);
+      this->create_publisher<custom_interfaces::msg::BmsErrors>("/vehicle/battery_errors", 10);
+
+  apps_higher_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/apps/higher", 10);
+  apps_lower_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/apps/lower", 10);
 
   // Subscritpions
   control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
@@ -513,6 +516,14 @@ void RosCan::dash_interpreter(const unsigned char msg[8]) {
       fl_rpm_publisher(msg);
       break;
     }
+    case APPS_HIGHER: {
+      apps_higher_publisher(msg);
+      break;
+    }
+    case APPS_LOWER: {
+      apps_lower_publisher(msg);
+      break;
+    }
     default:
       break;  // add error message
   }
@@ -825,6 +836,22 @@ void RosCan::bms_errors_publisher(const unsigned char msg[8], unsigned int dlc) 
     bms_errors_msg.charge_limit_enforcement_fault = (error_bitmap_2 & (1 << 15)) != 0;
   }
   bms_errors_pub_->publish(bms_errors_msg);
+}
+
+void RosCan::apps_higher_publisher(const unsigned char msg[8]) {
+  int32_t apps_higher_value = (msg[4] << 24) | (msg[3] << 16) | (msg[2] << 8) | msg[1];
+  auto message = std_msgs::msg::Int32();
+  message.data = apps_higher_value;
+
+  apps_higher_pub_->publish(message);
+}
+
+void RosCan::apps_lower_publisher(const unsigned char msg[8]) {
+  int32_t apps_lower_value = (msg[4] << 24) | (msg[3] << 16) | (msg[2] << 8) | msg[1];
+  auto message = std_msgs::msg::Int32();
+  message.data = apps_lower_value;
+
+  apps_lower_pub_->publish(message);
 }
 
 RosCan::~RosCan() {
