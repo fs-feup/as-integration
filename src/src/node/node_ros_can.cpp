@@ -71,6 +71,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   apps_lower_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/apps/lower", 10);
 
   implausability_pub_ = this->create_publisher<std_msgs::msg::Bool>("/vehicle/implausability", 10);
+  driving_state_pub_ = this->create_publisher<std_msgs::msg::Int8>("/vehicle/driving_state", 10);
 
   // Subscritpions
   control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
@@ -527,7 +528,7 @@ void RosCan::dash_interpreter(const unsigned char msg[8]) {
       break;
     }
     case DRIVING_STATE: {
-      implausability_publisher(msg);
+      driving_state_publisher(msg);
       break;
     }
     default:
@@ -859,12 +860,16 @@ void RosCan::apps_lower_publisher(const unsigned char msg[8]) {
   apps_lower_pub_->publish(message);
 }
 
-void RosCan::implausability_publisher(const unsigned char msg[8]) {
+void RosCan::driving_state_publisher(const unsigned char msg[8]) {
+  int8_t driving_state = msg[1];
   bool implausibility = (msg[2] != 0);
-  auto message = std_msgs::msg::Bool();
-  message.data = implausibility;
+  auto driving_state_msg = std_msgs::msg::Int8();
+  driving_state_msg.data = driving_state;
+  driving_state_pub_->publish(driving_state_msg);
 
-  implausability_pub_->publish(message);
+  auto implausability_msg = std_msgs::msg::Bool();
+  implausability_msg.data = implausibility;
+  implausability_pub_->publish(implausability_msg);
 }
 
 RosCan::~RosCan() {

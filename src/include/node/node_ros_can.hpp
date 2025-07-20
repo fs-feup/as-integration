@@ -77,6 +77,8 @@ private:
       apps_lower_pub_;  ///< Publisher for APPs lower value
   rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr
       implausability_pub_;  ///< Publisher for implausibility status
+  rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
+      driving_state_pub_;  ///< Publisher for driving state
 
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       steering_motor_state_pub_;  ///< Publisher for CubeM Motor Steering angle
@@ -387,11 +389,11 @@ private:
   void apps_lower_publisher(const unsigned char msg[8]);
 
   /**
-   * @brief Publishes the implausibility status to ROS.
+   * @brief Publishes the driving state to ROS.
    *
    * @param msg CAN message data
    */
-  void implausability_publisher(const unsigned char msg[8]);
+  void driving_state_publisher(const unsigned char msg[8]);
 
 public:
   /**
