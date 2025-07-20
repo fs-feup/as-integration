@@ -9,6 +9,8 @@
 #include <string>
 
 #include "canlib_wrappers/ican_lib_wrapper.hpp"
+#include "custom_interfaces/msg/bms_errors.hpp"
+#include "custom_interfaces/msg/cells_temps.hpp"
 #include "custom_interfaces/msg/control_command.hpp"
 #include "custom_interfaces/msg/hydraulic_line_pressure.hpp"
 #include "custom_interfaces/msg/imu.hpp"
@@ -21,11 +23,10 @@
 #include "custom_interfaces/msg/temperature.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
-#include "custom_interfaces/msg/cells_temps.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
-#include "std_msgs/msg/int8.hpp"
 #include "std_msgs/msg/int32.hpp"
+#include "std_msgs/msg/int8.hpp"
 
 /**
  * @class RosCan
@@ -65,8 +66,10 @@ private:
       inverter_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;  ///< Publisher for Bosch steering angle
-  rclcpp::Publisher<std_msgs::msg::Int32::SharedPtr 
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
       battery_voltage_pub_;  ///< Publisher for battery voltage
+  rclcpp::Publisher<custom_interfaces::msg::BmsErrors>::SharedPtr
+      bms_errors_pub_;  ///< Publisher for BMS errors
 
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       steering_motor_state_pub_;  ///< Publisher for CubeM Motor Steering angle
@@ -79,7 +82,8 @@ private:
 
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr _bamocar_current_pub;
 
-    rclcpp::Publisher<custom_interfaces::msg::CellsTemps>::SharedPtr cells_temps_pub_;  ///< Subscriber for control commands
+  rclcpp::Publisher<custom_interfaces::msg::CellsTemps>::SharedPtr
+      cells_temps_pub_;  ///< Subscriber cells temperatures
 
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
       hydraulic_line_pressure_publisher_;  ///< Publisher for hydraulic line pressure
@@ -156,7 +160,7 @@ private:
    * @param flag CAN message flags - see kvaser documentation for more info
    * @param time Timestamp of the CAN message
    */
-  void can_interpreter(long id, const unsigned char msg[8], unsigned int, unsigned int,
+  void can_interpreter(long id, const unsigned char msg[8], unsigned int dlc, unsigned int,
                        unsigned long);
 
   void can_interpreter_cells_temps(const unsigned char msg[8]);
@@ -205,16 +209,16 @@ private:
    */
   void rl_rpm_publisher(const unsigned char msg[8]);
 
- /**
-  * @brief Publishes the front right RPM to ROS.
-  * @param msg CAN message data
-  */
+  /**
+   * @brief Publishes the front right RPM to ROS.
+   * @param msg CAN message data
+   */
   void fr_rpm_publisher(const unsigned char msg[8]);
 
- /**
-  * @brief Publishes the front left RPM to ROS.
-  * @param msg CAN message data
-  */
+  /**
+   * @brief Publishes the front left RPM to ROS.
+   * @param msg CAN message data
+   */
   void fl_rpm_publisher(const unsigned char msg[8]);
 
   /**
@@ -352,6 +356,14 @@ private:
    * @return 0 on success, otherwise on failure
    */
   int bosch_steering_angle_set_origin();
+
+  /**
+   * @brief Publishes the BMS errors to ROS.
+   *
+   * @param msg CAN message data
+   * @param dlc Data length code
+   */
+  void bms_errors_publisher(const unsigned char msg[8], unsigned int dlc);
 
 public:
   /**

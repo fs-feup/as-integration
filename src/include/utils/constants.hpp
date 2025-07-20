@@ -170,6 +170,12 @@
  */
 #define IMU_GYRO 0x179
 
+/**
+ * ID used for:
+ * BMS Errors
+ */
+#define BMS_ERRORS_ID 0x123;
+
 // -------------- SENSORS CONSTANTS --------------
 
 /*
@@ -222,11 +228,11 @@
 #define BAMOCAR_MAX_SCALE 32760              // Max of the messages from the bamocar
 #define MAX_ACCUMULATOR_CHARGING_CURRENT 30  // In Amps, as per documentation
 
-#define STEERING_UPPER_LIMIT 0.392699       // Input Limits
-#define STEERING_LOWER_LIMIT -0.392699      // Input Limits
-#define STEERING_UPPER_LIMIT_HEX_CHAR 0x11  // Limit for buffer[1] value
-#define STEERING_SECOND_UPPER_LIMIT_HEX_CHAR 0xCF // Limit for buffer[2] value
-#define STEERING_LOWER_LIMIT_HEX_CHAR 0xee  // Limit for buffer[1] value
+#define STEERING_UPPER_LIMIT 0.392699              // Input Limits
+#define STEERING_LOWER_LIMIT -0.392699             // Input Limits
+#define STEERING_UPPER_LIMIT_HEX_CHAR 0x11         // Limit for buffer[1] value
+#define STEERING_SECOND_UPPER_LIMIT_HEX_CHAR 0xCF  // Limit for buffer[2] value
+#define STEERING_LOWER_LIMIT_HEX_CHAR 0xee         // Limit for buffer[1] value
 #define STEERING_SECOND_LOWER_LIMIT_HEX_CHAR 0x30  // Limit for buffer[2] value
 #define BMS_THERMISTOR_ID 0x1839'F380
 

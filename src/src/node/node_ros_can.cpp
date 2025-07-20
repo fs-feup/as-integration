@@ -39,34 +39,34 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   bosch_steering_angle_publisher_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
       "/vehicle/bosch_steering_angle", 10);
 
-  cells_temps_pub_ = this->create_publisher<custom_interfaces::msg::CellsTemps>(
-    "vehicle/cells/temperature", 10
-  );
+  cells_temps_pub_ =
+      this->create_publisher<custom_interfaces::msg::CellsTemps>("vehicle/cells/temperature", 10);
 
-  _bamocar_current_pub = this->create_publisher<std_msgs::msg::Int32>(
-      "/vehicle/bamocar_current", 10);
+  _bamocar_current_pub =
+      this->create_publisher<std_msgs::msg::Int32>("/vehicle/bamocar_current", 10);
 
   steering_motor_state_pub_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
-        "/vehicle/steering_motor_state", 10);
-  steering_motor_temperature = this->create_publisher<std_msgs::msg::Int8>(
-        "/vehicle/steering_motor_temperature", 10);
-  steering_motor_current = this->create_publisher<std_msgs::msg::Float64>(
-        "/vehicle/steering_motor_current", 10);
-  steering_motor_error = this->create_publisher<std_msgs::msg::Int8>(
-        "/vehicle/steering_motor_error", 10);
+      "/vehicle/steering_motor_state", 10);
+  steering_motor_temperature =
+      this->create_publisher<std_msgs::msg::Int8>("/vehicle/steering_motor_temperature", 10);
+  steering_motor_current =
+      this->create_publisher<std_msgs::msg::Float64>("/vehicle/steering_motor_current", 10);
+  steering_motor_error =
+      this->create_publisher<std_msgs::msg::Int8>("/vehicle/steering_motor_error", 10);
 
   hydraulic_line_pressure_publisher_ =
       this->create_publisher<custom_interfaces::msg::HydraulicLinePressure>(
           "/vehicle/hydraulic_line_pressure", 10);
 
-  fr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>(
-      "/vehicle/fr_rpm", 10);
-  fl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>(
-      "/vehicle/fl_rpm", 10);
+  fr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/fr_rpm", 10);
+  fl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/fl_rpm", 10);
 
-  battery_voltage_pub_ = this->create_publisher<std_msgs::msg::Int32>(
-      "/vehicle/battery_voltage", 10);
-  
+  battery_voltage_pub_ =
+      this->create_publisher<std_msgs::msg::Float64>("/vehicle/battery_voltage", 10);
+
+  bms_errors_pub_ =
+      this->create_publisher<custom_interfaces::msg::BmsErrors>("/vehicle/battery/errors", 10);
+
   // Subscritpions
   control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
       "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
@@ -96,8 +96,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   hnd0_ = canOpenChannel(0, canOPEN_EXCLUSIVE);  // TODO: this will be used only for SAS
   hnd1_ = canOpenChannel(1, canOPEN_EXCLUSIVE);  // TODO: this is for everything else
   // Setup CAN parameters for the channel
-  stat_ = canSetBusParams(hnd0_, canBITRATE_500K, 0, 0, 4, 0, 0);    // check these values later
-  stat_ = canSetBusParams(hnd1_, canBITRATE_1M, 0, 0, 4, 0, 0);  // check these values later
+  stat_ = canSetBusParams(hnd0_, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
+  stat_ = canSetBusParams(hnd1_, canBITRATE_1M, 0, 0, 4, 0, 0);    // check these values later
 
   if (stat_ != canOK) {
     RCLCPP_ERROR(this->get_logger(), "Failed to setup CAN parameters");
@@ -127,13 +127,13 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
 }
 
 void RosCan::can_interpreter_cells_temps(const unsigned char msg[8]) {
-  RCLCPP_INFO(this->get_logger(),"Starting temps");
+  RCLCPP_INFO(this->get_logger(), "Starting temps");
   custom_interfaces::msg::CellsTemps cells_temps_msg;
   cells_temps_msg.min_temp = msg[1];
   cells_temps_msg.max_temp = msg[2];
   cells_temps_msg.avg_temp = msg[3];
   cells_temps_pub_->publish(cells_temps_msg);
-  RCLCPP_INFO(this->get_logger(),"Ending temps");
+  RCLCPP_INFO(this->get_logger(), "Ending temps");
 }
 // -------------- ROS TO CAN --------------
 
@@ -239,10 +239,10 @@ void RosCan::emergency_callback(const std::shared_ptr<std_srvs::srv::Trigger::Re
   unsigned int flag = 0;
   RCLCPP_INFO(this->get_logger(), "Emergency signal received, sending to CAN");
 
-  //stat_ = can_lib_wrapper_->canWrite(hnd0_, id, requestData, dlc, flag);
-  //if (stat_ != canOK) {
-  //  RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
-  //}
+  // stat_ = can_lib_wrapper_->canWrite(hnd0_, id, requestData, dlc, flag);
+  // if (stat_ != canOK) {
+  //   RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
+  // }
 }
 
 void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
@@ -260,10 +260,10 @@ void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trig
   unsigned int flag = 0;
   RCLCPP_INFO(this->get_logger(), "Mission finished signal received, sending to CAN");
 
-  //stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
-  //if (stat_ != canOK) {
-  //  RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
-  //}
+  // stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
+  // if (stat_ != canOK) {
+  //   RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
+  // }
 }
 
 void RosCan::bosch_sa_reset_callack(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
@@ -377,7 +377,7 @@ void RosCan::can_sniffer() {
   }
 }
 
-void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, unsigned int,
+void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int dlc, unsigned int,
                              unsigned long) {
   switch (id) {
     case MASTER_ID: {
@@ -416,6 +416,10 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int, 
       can_interpreter_cells_temps(msg);
       break;
     }
+    case BMS_ERRORS_ID: {
+      bms_errors_publisher(msg, dlc);
+      break;
+    }
     default:
       break;
   }
@@ -426,9 +430,6 @@ void RosCan::can_interpreter_bamocar_current(const unsigned char msg[8]) {
   temp.data = (msg[2] << 8) | msg[1];
   _bamocar_current_pub->publish(temp);
 }
-
-
-
 
 void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
   switch (msg[0]) {
@@ -459,8 +460,9 @@ void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
 }
 
 void RosCan::can_interpreter_master(const unsigned char msg[8]) {
-  RCLCPP_INFO(this->get_logger(), "Received Master message"); 
-  RCLCPP_INFO(this->get_logger(), "Message: %x %x %x %x %x %x %x %x", msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6],msg[7]);
+  RCLCPP_INFO(this->get_logger(), "Received Master message");
+  RCLCPP_INFO(this->get_logger(), "Message: %x %x %x %x %x %x %x %x", msg[0], msg[1], msg[2],
+              msg[3], msg[4], msg[5], msg[6], msg[7]);
   switch (msg[0]) {
     case MASTER_AS_STATE_CODE: {
       if (msg[1] == 3) {  // If AS State == Driving
@@ -626,17 +628,16 @@ void RosCan::steering_angle_cubem_publisher(const unsigned char msg[8]) {
   // When steering motor wakes up, set its origin
   if (!this->cubem_configuration_sent_) {
     this->cubem_configuration_sent_ = true;
-    //bosch_steering_angle_set_origin();
+    // bosch_steering_angle_set_origin();
     this->cubem_set_origin();
     RCLCPP_INFO(this->get_logger(), "New configuration sent!");
   }
 
-  int16_t angle = (msg[0] << 8) | msg[1];  // Extract 16-bit motor angle
-  int16_t speed = (msg[2] << 8) | msg[3];  // Extract 16-bit motor speed
-  int16_t current = (msg[4] << 8) | msg[5]; // Extract 16-bit motor current
-  int8_t temperature = msg[6]; // Extract 8-bit motor temperature
-  int8_t error = msg[7];  // Extract 8-bit motor error
-
+  int16_t angle = (msg[0] << 8) | msg[1];    // Extract 16-bit motor angle
+  int16_t speed = (msg[2] << 8) | msg[3];    // Extract 16-bit motor speed
+  int16_t current = (msg[4] << 8) | msg[5];  // Extract 16-bit motor current
+  int8_t temperature = msg[6];               // Extract 8-bit motor temperature
+  int8_t error = msg[7];                     // Extract 8-bit motor error
 
   auto motor_message = custom_interfaces::msg::SteeringAngle();
   motor_message.header.stamp = this->get_clock()->now();
@@ -719,7 +720,6 @@ void RosCan::rl_rpm_publisher(const unsigned char msg[8]) {
   message.rl_rpm = rlRPM;
   // RCLCPP_DEBUG(this->get_logger(), "Received RL RPM: %f", rlRPM);
   rl_rpm_pub_->publish(message);
-
 }
 
 void RosCan::fr_rpm_publisher(const unsigned char msg[8]) {
@@ -785,6 +785,48 @@ void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
   hydraulic_line_pressure_publisher_->publish(message);
 }
 
+void RosCan::bms_errors_publisher(const unsigned char msg[8], unsigned int dlc) {
+  auto bms_errors_msg = custom_interfaces::msg::BmsErrors();
+  bms_errors_msg.header.stamp = this->get_clock()->now();
+
+  if (dlc >= 2) {
+    uint16_t error_bitmap_1 = (msg[1] << 8) | msg[0];
+    bms_errors_msg.error_bitmap_1 = error_bitmap_1;
+
+    bms_errors_msg.discharge_limit_enforcement_fault = (error_bitmap_1 & (1 << 0)) != 0;
+    bms_errors_msg.charger_safety_relay_fault = (error_bitmap_1 & (1 << 1)) != 0;
+    bms_errors_msg.internal_hardware_fault = (error_bitmap_1 & (1 << 2)) != 0;
+    bms_errors_msg.internal_heatsink_thermistor_fault = (error_bitmap_1 & (1 << 3)) != 0;
+    bms_errors_msg.internal_software_fault = (error_bitmap_1 & (1 << 4)) != 0;
+    bms_errors_msg.highest_cell_voltage_too_high_fault = (error_bitmap_1 & (1 << 5)) != 0;
+    bms_errors_msg.lowest_cell_voltage_too_low_fault = (error_bitmap_1 & (1 << 6)) != 0;
+    bms_errors_msg.pack_too_hot_fault = (error_bitmap_1 & (1 << 7)) != 0;
+  }
+
+  if (dlc >= 4) {
+    uint16_t error_bitmap_2 = (msg[3] << 8) | msg[2];
+    bms_errors_msg.error_bitmap_2 = error_bitmap_2;
+
+    bms_errors_msg.internal_communication_fault = (error_bitmap_2 & (1 << 0)) != 0;
+    bms_errors_msg.cell_balancing_stuck_off_fault = (error_bitmap_2 & (1 << 1)) != 0;
+    bms_errors_msg.weak_cell_fault = (error_bitmap_2 & (1 << 2)) != 0;
+    bms_errors_msg.low_cell_voltage_fault = (error_bitmap_2 & (1 << 3)) != 0;
+    bms_errors_msg.open_wiring_fault = (error_bitmap_2 & (1 << 4)) != 0;
+    bms_errors_msg.current_sensor_fault = (error_bitmap_2 & (1 << 5)) != 0;
+    bms_errors_msg.highest_cell_voltage_over_5v_fault = (error_bitmap_2 & (1 << 6)) != 0;
+    bms_errors_msg.cell_asic_fault = (error_bitmap_2 & (1 << 7)) != 0;
+    bms_errors_msg.weak_pack_fault = (error_bitmap_2 & (1 << 8)) != 0;
+    bms_errors_msg.fan_monitor_fault = (error_bitmap_2 & (1 << 9)) != 0;
+    bms_errors_msg.thermistor_fault = (error_bitmap_2 & (1 << 10)) != 0;
+    bms_errors_msg.external_communication_fault = (error_bitmap_2 & (1 << 11)) != 0;
+    bms_errors_msg.redundant_power_supply_fault = (error_bitmap_2 & (1 << 12)) != 0;
+    bms_errors_msg.high_voltage_isolation_fault = (error_bitmap_2 & (1 << 13)) != 0;
+    bms_errors_msg.input_power_supply_fault = (error_bitmap_2 & (1 << 14)) != 0;
+    bms_errors_msg.charge_limit_enforcement_fault = (error_bitmap_2 & (1 << 15)) != 0;
+  }
+  bms_errors_pub_->publish(bms_errors_msg);
+}
+
 RosCan::~RosCan() {
   RCLCPP_INFO(this->get_logger(), "Shutting down CAN interface");
 
@@ -794,7 +836,7 @@ RosCan::~RosCan() {
     hnd0_ = -1;
   }
 
-    if (hnd1_ >= 0) {
+  if (hnd1_ >= 0) {
     canBusOff(hnd1_);
     canClose(hnd1_);
     hnd1_ = -1;
