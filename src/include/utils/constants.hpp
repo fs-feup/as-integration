@@ -192,7 +192,7 @@
  * ID used for:
  * Driving State
  */
-#define DRIVING_STATE 0x22
+#define DRIVING_STATE 0x40
 
 // -------------- SENSORS CONSTANTS --------------
 

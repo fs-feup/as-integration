@@ -763,7 +763,7 @@ void RosCan::fl_rpm_publisher(const unsigned char msg[8]) {
 void RosCan::inverter_voltage_publisher(const unsigned char msg[8]) {
   this->inverter_voltage_ = (msg[2] << 8) | msg[1];
   auto message = std_msgs::msg::Int32();
-  message.data = this->inverter_voltage_ * BAMOCAR_MAX_VOLTAGE / BAMOCAR_MAX_SCALE;
+  message.data = this->inverter_voltage_ / 31.58483;
   RCLCPP_DEBUG(this->get_logger(), "Received voltage from Bamocar: %d", this->inverter_voltage_);
   inverter_voltage_pub_->publish(message);
 }
