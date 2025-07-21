@@ -808,41 +808,43 @@ void RosCan::bms_errors_publisher(const unsigned char msg[8], unsigned int dlc) 
   auto bms_errors_msg = custom_interfaces::msg::BmsErrors();
   bms_errors_msg.header.stamp = this->get_clock()->now();
 
-  if (dlc >= 2) {
-    uint16_t error_bitmap_1 = (msg[1] << 8) | msg[0];
-    bms_errors_msg.error_bitmap_1 = error_bitmap_1;
+  bms_errors_pub_.bms_current = msg[6];
 
-    bms_errors_msg.discharge_limit_enforcement_fault = (error_bitmap_1 & (1 << 0)) != 0;
-    bms_errors_msg.charger_safety_relay_fault = (error_bitmap_1 & (1 << 1)) != 0;
-    bms_errors_msg.internal_hardware_fault = (error_bitmap_1 & (1 << 2)) != 0;
-    bms_errors_msg.internal_heatsink_thermistor_fault = (error_bitmap_1 & (1 << 3)) != 0;
-    bms_errors_msg.internal_software_fault = (error_bitmap_1 & (1 << 4)) != 0;
-    bms_errors_msg.highest_cell_voltage_too_high_fault = (error_bitmap_1 & (1 << 5)) != 0;
-    bms_errors_msg.lowest_cell_voltage_too_low_fault = (error_bitmap_1 & (1 << 6)) != 0;
-    bms_errors_msg.pack_too_hot_fault = (error_bitmap_1 & (1 << 7)) != 0;
-  }
+  // if (dlc >= 2) {
+  //   uint16_t error_bitmap_1 = (msg[1] << 8) | msg[0];
+  //   bms_errors_msg.error_bitmap_1 = error_bitmap_1;
 
-  if (dlc >= 4) {
-    uint16_t error_bitmap_2 = (msg[3] << 8) | msg[2];
-    bms_errors_msg.error_bitmap_2 = error_bitmap_2;
+  //   bms_errors_msg.discharge_limit_enforcement_fault = (error_bitmap_1 & (1 << 0)) != 0;
+  //   bms_errors_msg.charger_safety_relay_fault = (error_bitmap_1 & (1 << 1)) != 0;
+  //   bms_errors_msg.internal_hardware_fault = (error_bitmap_1 & (1 << 2)) != 0;
+  //   bms_errors_msg.internal_heatsink_thermistor_fault = (error_bitmap_1 & (1 << 3)) != 0;
+  //   bms_errors_msg.internal_software_fault = (error_bitmap_1 & (1 << 4)) != 0;
+  //   bms_errors_msg.highest_cell_voltage_too_high_fault = (error_bitmap_1 & (1 << 5)) != 0;
+  //   bms_errors_msg.lowest_cell_voltage_too_low_fault = (error_bitmap_1 & (1 << 6)) != 0;
+  //   bms_errors_msg.pack_too_hot_fault = (error_bitmap_1 & (1 << 7)) != 0;
+  // }
 
-    bms_errors_msg.internal_communication_fault = (error_bitmap_2 & (1 << 0)) != 0;
-    bms_errors_msg.cell_balancing_stuck_off_fault = (error_bitmap_2 & (1 << 1)) != 0;
-    bms_errors_msg.weak_cell_fault = (error_bitmap_2 & (1 << 2)) != 0;
-    bms_errors_msg.low_cell_voltage_fault = (error_bitmap_2 & (1 << 3)) != 0;
-    bms_errors_msg.open_wiring_fault = (error_bitmap_2 & (1 << 4)) != 0;
-    bms_errors_msg.current_sensor_fault = (error_bitmap_2 & (1 << 5)) != 0;
-    bms_errors_msg.highest_cell_voltage_over_5v_fault = (error_bitmap_2 & (1 << 6)) != 0;
-    bms_errors_msg.cell_asic_fault = (error_bitmap_2 & (1 << 7)) != 0;
-    bms_errors_msg.weak_pack_fault = (error_bitmap_2 & (1 << 8)) != 0;
-    bms_errors_msg.fan_monitor_fault = (error_bitmap_2 & (1 << 9)) != 0;
-    bms_errors_msg.thermistor_fault = (error_bitmap_2 & (1 << 10)) != 0;
-    bms_errors_msg.external_communication_fault = (error_bitmap_2 & (1 << 11)) != 0;
-    bms_errors_msg.redundant_power_supply_fault = (error_bitmap_2 & (1 << 12)) != 0;
-    bms_errors_msg.high_voltage_isolation_fault = (error_bitmap_2 & (1 << 13)) != 0;
-    bms_errors_msg.input_power_supply_fault = (error_bitmap_2 & (1 << 14)) != 0;
-    bms_errors_msg.charge_limit_enforcement_fault = (error_bitmap_2 & (1 << 15)) != 0;
-  }
+  // if (dlc >= 4) {
+  //   uint16_t error_bitmap_2 = (msg[3] << 8) | msg[2];
+  //   bms_errors_msg.error_bitmap_2 = error_bitmap_2;
+
+  //   bms_errors_msg.internal_communication_fault = (error_bitmap_2 & (1 << 0)) != 0;
+  //   bms_errors_msg.cell_balancing_stuck_off_fault = (error_bitmap_2 & (1 << 1)) != 0;
+  //   bms_errors_msg.weak_cell_fault = (error_bitmap_2 & (1 << 2)) != 0;
+  //   bms_errors_msg.low_cell_voltage_fault = (error_bitmap_2 & (1 << 3)) != 0;
+  //   bms_errors_msg.open_wiring_fault = (error_bitmap_2 & (1 << 4)) != 0;
+  //   bms_errors_msg.current_sensor_fault = (error_bitmap_2 & (1 << 5)) != 0;
+  //   bms_errors_msg.highest_cell_voltage_over_5v_fault = (error_bitmap_2 & (1 << 6)) != 0;
+  //   bms_errors_msg.cell_asic_fault = (error_bitmap_2 & (1 << 7)) != 0;
+  //   bms_errors_msg.weak_pack_fault = (error_bitmap_2 & (1 << 8)) != 0;
+  //   bms_errors_msg.fan_monitor_fault = (error_bitmap_2 & (1 << 9)) != 0;
+  //   bms_errors_msg.thermistor_fault = (error_bitmap_2 & (1 << 10)) != 0;
+  //   bms_errors_msg.external_communication_fault = (error_bitmap_2 & (1 << 11)) != 0;
+  //   bms_errors_msg.redundant_power_supply_fault = (error_bitmap_2 & (1 << 12)) != 0;
+  //   bms_errors_msg.high_voltage_isolation_fault = (error_bitmap_2 & (1 << 13)) != 0;
+  //   bms_errors_msg.input_power_supply_fault = (error_bitmap_2 & (1 << 14)) != 0;
+  //   bms_errors_msg.charge_limit_enforcement_fault = (error_bitmap_2 & (1 << 15)) != 0;
+  // }
   bms_errors_pub_->publish(bms_errors_msg);
 }
 
