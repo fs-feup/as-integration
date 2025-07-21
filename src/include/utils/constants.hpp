@@ -174,7 +174,7 @@
  * ID used for:
  * BMS Errors
  */
-#define BMS_ERRORS_ID 0x123
+#define BMS_ERRORS_ID 0x101
 
 /**
  * ID used for:
