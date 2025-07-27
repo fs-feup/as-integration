@@ -540,6 +540,15 @@ void RosCan::can_interpreter_master(const unsigned char msg[8]) {
       this->master_logs_2_publisher(msg);
       break;
     }
+    case MASTER_EBS_STATE_CODE: {
+      this->asb_ebs_state_ = static_cast<uint8_t>(msg[1]);
+      break;
+    }
+    case MASTER_EBS_REDUNDANCY_STATE_CODE: {
+      this->asb_ebs_redundancy_state_ = static_cast<uint8_t>(msg[1]);
+      break;
+    }
+
     case TEENSY_RR_RPM_CODE: {
       rr_rpm_publisher(msg);
       break;
@@ -605,6 +614,8 @@ void RosCan::master_logs_publisher(const unsigned char msg[8]) {
   log_message.mission = mission;
   log_message.master_state = master_state;
   log_message.checkup_state = checkup_state;
+
+  this->steering_state_ = static_cast<bool>(steer_dead);
 
   master_log_pub_->publish(log_message);
 }
