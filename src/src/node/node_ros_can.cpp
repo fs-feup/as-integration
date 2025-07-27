@@ -184,8 +184,11 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
   }
 
   double steering_degrees = msg->steering * 180.0 / M_PI;
-  steering_angle_target_ = static_cast<int8_t>(steering_degrees * 2); 
-  motor_moment_target_ = static_cast<int8_t>(msg->throttle * 100)
+  this->steering_angle_target_ = static_cast<int8_t>(steering_degrees * 2);
+
+  this->motor_moment_actual_ = static_cast<int8_t>(msg->throttle * 100);
+  this->motor_moment_target_ = static_cast<int8_t>(msg->throttle * 100);
+
 
   if (this->go_signal_) {
     RCLCPP_INFO(this->get_logger(), "State is Driving: Steering: %f (radians), Throttle: %f",
