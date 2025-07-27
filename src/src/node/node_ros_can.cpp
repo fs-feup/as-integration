@@ -67,13 +67,13 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
 
   this->perception_subscription_ = this->create_subscription<custom_interfaces::msg::ConeArray>(
-      "/perception/cones", 1, [this](const custom_interfaces::msg::ConeArray::SharedPtr msg) {
-          auto const &cone_array = msg.cone_array;
+      "/perception/cones", 10, [this](const custom_interfaces::msg::ConeArray::SharedPtr msg) {
+          auto const &cone_array = msg->cone_array;
           this->cones_count_actual_ = static_cast<uint8_t>(cone_array.size());
       });
 
   this->velocities_subscription_ = this->create_subscription<custom_interfaces::msg::Velocities>(
-      "/state_estimation/velocities", 1,
+      "/state_estimation/velocities", 10,
       [this](const custom_interfaces::msg::Velocities::SharedPtr msg) {
           this->speed_actual_ = static_cast<uint8_t>(msg->velocity_x);
       });
@@ -85,8 +85,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       });
 
   this->lap_counter_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
-      "/path_planning/smoothed_path", 10, [this](const std_msgs::msg::Float64::SharedPtr msg) {
-        this->lap_counter_ = static_cast<uint8_t>(msg->data);
+      "/state_estimation/lap_counter", 10, [this](const std_msgs::msg::Float64::SharedPtr msg) {
+        this->lap_counter_ = static_cast<int>(msg->data);
       });
 
   this->path_subscription_ = this->create_subscription<custom_interfaces::msg::PathPointArray>(
