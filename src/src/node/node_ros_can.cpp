@@ -81,7 +81,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   this->map_subscription_ = this->create_subscription<custom_interfaces::msg::ConeArray>(
       "/state_estimation/map", 10, [this](const custom_interfaces::msg::ConeArray::SharedPtr msg) {
           auto const &cone_array = msg->cone_array;
-          this->cones_count_map_ = static_cast<uint16_t>(cone_array.size());
+          this->cones_count_all_ = static_cast<uint16_t>(cone_array.size());
       });
 
   this->lap_counter_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
