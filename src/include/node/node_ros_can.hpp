@@ -99,6 +99,25 @@ private:
   // rclcpp::Subscription<std_msgs::msg::String::SharedPtr> busStatus;
   rclcpp::Subscription<custom_interfaces::msg::ControlCommand>::SharedPtr
       control_listener_;  ///< Subscription for control commands
+
+  rclcpp::Subscription<custom_interfaces::msg::ConeArray>::SharedPtr
+      perception_subscription_;  ///< Subscription for perception data
+
+  rclcpp::Subscription<custom_interfaces::msg::Velocities>::SharedPtr
+      velocities_subscription_;  ///< Subscription for velocity data
+
+  rclcpp::Subscription<custom_interfaces::msg::ConeArray>::SharedPtr
+      map_subscription_;  ///< Subscription for map data
+
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr
+      lap_counter_subscription_;  ///< Subscription for lap counter data
+
+  rclcpp::Subscription<custom_interfaces::msg::EvaluatorControlData>::SharedPtr
+      evaluator_subscription_;  ///< Subscription for evaluator data
+
+  rclcpp::Subscription<custom_interfaces::msg::PathPointArray>::SharedPtr
+      path_subscription_;  ///< Subscription for path data
+
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr
       emergency_service_;  ///< Service for emergency handling
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr
@@ -107,6 +126,7 @@ private:
       bosch_steering_angle_reset_service_;        ///< Service for reset bosch steering angle
   rclcpp::TimerBase::SharedPtr timer_;            ///< Timer for periodic tasks
   rclcpp::TimerBase::SharedPtr timer_alive_msg_;  ///< Timer for sending alive messages
+  rclcpp::TimerBase::SharedPtr dv_timer_;         ///< Timer for sending driving dynamics messages
 
   canHandle hnd0_;  ///< Handle to the CAN channel
   canHandle hnd1_;  ///< Handle to the CAN channel
@@ -129,6 +149,34 @@ private:
   bool cubem_configuration_sent_ = false;  ///< Flag to check if Cubemars configuration is sent
 
   double cubem_steering_angle_ = 0.0;  ///< Steering angle from Cubemars
+
+  //DV driving dynamics 1
+  uint8_t speed_actual_ = 0;
+  uint8_t speed_target_ = 0;
+  int8_t steering_angle_actual_ = 0;
+  int8_t steering_angle_target_ = 0;
+  uint8_t brake_hydr_actual_ = 0;
+  uint8_t brake_hydr_target_ = 0;
+  int8_t motor_moment_actual_ = 0;
+  int8_t motor_moment_target_ = 0;
+
+  //DV driving dynamics 2
+  int16_t acceleration_longitudinal_ = 0;
+  int16_t acceleration_lateral_ = 0;
+  int16_t yaw_rate_ = 0;
+
+  //DV system status
+  uint8_t as_status_ = 1; 
+  uint8_t asb_ebs_state_ = 1;
+  uint8_t ami_state_ = 1; 
+  bool steering_state_ = false;
+  uint8_t asb_redundancy_state_ = 1; 
+  uint8_t lap_counter_ = 0;
+  uint8_t cones_count_actual_ = 0;
+  uint16_t cones_count_all_ = 0;
+
+
+    
 
   /**
    * @brief Function to turn ON and OFF the CAN BUS
@@ -345,6 +393,11 @@ private:
    * @return 0 on success, otherwise on failure
    */
   int bosch_steering_angle_set_origin();
+
+  void send_dv_driving_dynamics_1();
+  void send_dv_driving_dynamics_2();
+  void send_dv_system_status();
+  void dv_messages_callback();
 
 public:
   /**

@@ -57,14 +57,42 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       this->create_publisher<custom_interfaces::msg::HydraulicLinePressure>(
           "/vehicle/hydraulic_line_pressure", 10);
 
-  // Subscritpions
-  control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
-      "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
-
   fr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>(
       "/vehicle/fr_rpm", 10);
   fl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>(
       "/vehicle/fl_rpm", 10);
+
+  // Subscriptions
+  control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
+      "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
+
+  this->perception_subscription_ = this->create_subscription<custom_interfaces::msg::ConeArray>(
+      "/perception/cones", 1, [this](const custom_interfaces::msg::ConeArray::SharedPtr msg) {
+          auto const &cone_array = msg.cone_array;
+          this->cones_count_actual_ = static_cast<uint8_t>(cone_array.size());
+      });
+
+  this->velocities_subscription_ = this->create_subscription<custom_interfaces::msg::Velocities>(
+      "/state_estimation/velocities", 1,
+      [this](const custom_interfaces::msg::Velocities::SharedPtr msg) {
+          this->speed_actual_ = static_cast<uint8_t>(msg->velocity_x);
+      });
+
+  this->map_subscription_ = this->create_subscription<custom_interfaces::msg::ConeArray>(
+      "/state_estimation/map", 10, [this](const custom_interfaces::msg::ConeArray::SharedPtr msg) {
+          auto const &cone_array = msg->cone_array;
+          this->cones_count_map_ = static_cast<uint16_t>(cone_array.size());
+      });
+
+  this->lap_counter_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
+      "/path_planning/smoothed_path", 10, [this](const std_msgs::msg::Float64::SharedPtr msg) {
+        this->lap_counter_ = static_cast<uint8_t>(msg->data);
+      });
+
+  this->path_subscription_ = this->create_subscription<custom_interfaces::msg::PathPointArray>(
+      "/path_planning/path", 10, [this](const custom_interfaces::msg::PathPointArray::SharedPtr msg) {
+          this->speed_target_ = static_cast<uint8_t>(msg->pathpoint_array[0].v);
+      });
 
   // Services
   emergency_service_ = this->create_service<std_srvs::srv::Trigger>(
@@ -83,6 +111,9 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
                                    std::bind(&RosCan::can_sniffer, this));
   timer_alive_msg_ = this->create_wall_timer(std::chrono::milliseconds(100),
                                              std::bind(&RosCan::alive_msg_callback, this));
+
+  dv_timer_ = this->create_wall_timer(std::chrono::milliseconds(100),
+                                   std::bind(&RosCan::dv_messages_callback, this));
 
   // initialize the CAN library
   canInitializeLibrary();
@@ -151,6 +182,10 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
     RCLCPP_ERROR(this->get_logger(), "Failed to transform steering angle command");
     return;
   }
+
+  double steering_degrees = msg->steering * 180.0 / M_PI;
+  steering_angle_target_ = static_cast<int8_t>(steering_degrees * 2); 
+  motor_moment_target_ = static_cast<int8_t>(msg->throttle * 100)
 
   if (this->go_signal_) {
     RCLCPP_INFO(this->get_logger(), "State is Driving: Steering: %f (radians), Throttle: %f",
@@ -447,14 +482,50 @@ void RosCan::can_interpreter_master(const unsigned char msg[8]) {
     case MASTER_AS_STATE_CODE: {
       if (msg[1] == 3) {  // If AS State == Driving
         this->go_signal_ = 1;
+        this->as_status_ = 3;     // DRIVING
       } else {
         this->go_signal_ = 0;
+        switch(msg[1]) {
+          case 0: this->as_status_ = 1; break;      // OFF
+          case 1: this->as_status_ = 2; break;      // READY
+          case 4: this->as_status_ = 4; break;      // EMERGENCY
+          case 5: this->as_status_ = 5; break;      // FINISHED
+          default: this->as_status_ = 1; break;     // Default to OFF
+        }
       }
       op_status_publisher();
       break;
     }
     case MASTER_AS_MISSION_CODE: {
       this->as_mission_ = msg[1];
+
+      switch(this->as_mission_){
+        case 0: 
+          this->ami_state_ = 0;     // Manual
+          break;
+        case 1:
+          this->ami_state_ = 1;     // Acceleration 
+          break;
+        case 2:
+          this->ami_state_ = 2;     // Skidpad 
+          break;
+        case 3:
+          this->ami_state_ = 6;     // Autocross
+          break;
+        case 4:
+          this->ami_state_ = 3;     // Trackdrive
+          break;
+        case 5:
+          this->ami_state_ = 4;    // EBS test
+          break;
+        case 6:
+          this->ami_state_ = 5;    // Inspection
+          break;
+        default:
+          break;
+      }
+
+
       op_status_publisher();
       break;
     }
@@ -568,6 +639,9 @@ void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
   float acc_y = ((msg[2] << 8 | msg[3]) - 0X8000) * QUANTIZATION_ACC;
   float acc_z = ((msg[4] << 8 | msg[5]) - 0X8000) * QUANTIZATION_ACC;
 
+  acceleration_longitudinal_ = static_cast<int16_t>(acc_x * 512);
+  acceleration_lateral_ = static_cast<int16_t>(acc_y * 512);
+
   auto message = custom_interfaces::msg::ImuAcceleration();
   message.header.stamp = this->get_clock()->now();
   message.acc_x = acc_x;
@@ -593,6 +667,8 @@ void RosCan::imu_angular_velocity_publisher(const unsigned char msg[8]) {
   float roll = ((msg[0] << 8 | msg[1]) - 0x8000) * QUANTIZATION_GYRO;
   float pitch = ((msg[2] << 8 | msg[3]) - 0x8000) * QUANTIZATION_GYRO;
   float yaw = ((msg[4] << 8 | msg[5]) - 0x8000) * QUANTIZATION_GYRO;
+
+  yaw_rate_ = static_cast<int16_t>(yaw * 128);
 
   auto message = custom_interfaces::msg::YawPitchRoll();
   message.header.stamp = this->get_clock()->now();
@@ -675,7 +751,11 @@ void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
   speed = speed * M_PI / 180;
 
   angle = angle * M_PI / 180;
-  this->steering_angle_ = -angle;  // Used for initial adjustment
+  this->steering_angle_ = -angle;
+
+  double steering_degrees = this->steering_angle_ * 180.0 / M_PI;
+  steering_angle_actual_ = static_cast<int8_t>(steering_degrees * 2);
+
   RCLCPP_INFO(this->get_logger(), "Steering angle: %f", this->steering_angle_);
 
   double steering_angle_wheels;
@@ -766,8 +846,132 @@ void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
   message.header.stamp = this->get_clock()->now();
   message.pressure = hydraulic_line_pressure;
 
+  this->brake_hydr_actual_ = static_cast<uint8_t>(hydraulic_line_pressure);
+  this->brake_hydr_target_ = static_cast<uint8_t>(hydraulic_line_pressure);
+
   hydraulic_line_pressure_publisher_->publish(message);
 }
+
+void RosCan::dv_messages_callback() {
+    send_dv_driving_dynamics_1();
+    send_dv_driving_dynamics_2();
+    send_dv_system_status();
+}
+
+void RosCan::send_dv_driving_dynamics_1() {
+    long id = 0x500;
+    unsigned char buffer[8] = {0};
+    
+    // Speed_actual (bit 0-7, unsigned)
+    buffer[0] = speed_actual_;
+
+    // Speed_target (bit 8-15, unsigned)
+    buffer[1] = speed_target_;
+    
+    // Steering_angle_actual (bit 16-23, signed, scale 0.5)
+    buffer[2] = static_cast<uint8_t>(steering_angle_actual_);
+    
+    // Steering_angle_target (bit 24-31, signed, scale 0.5)
+    buffer[3] = static_cast<uint8_t>(steering_angle_target_);
+    
+    // Brake_hydr_actual (bit 32-39, unsigned)
+    buffer[4] = brake_hydr_actual_;
+
+    // Brake_hydr_target (bit 40-47, unsigned)
+    buffer[5] = brake_hydr_target_;
+    
+    // Motor_moment_actual (bit 48-55, signed)
+    buffer[6] = static_cast<uint8_t>(motor_moment_actual_);
+    
+    // Motor_moment_target (bit 56-63, signed)
+    buffer[7] = static_cast<uint8_t>(motor_moment_target_);
+    
+    void *requestData = static_cast<void *>(buffer);
+    unsigned int dlc = 8;
+    unsigned int flag = 0;
+    
+    stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
+    if (stat_ != canOK) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to write DV driving dynamics 1 to CAN bus");
+    }
+}
+
+void RosCan::send_dv_driving_dynamics_2() {
+    long id = 0x501;
+    unsigned char buffer[8] = {0};
+    
+    // Acceleration longitudinal (bit 0-15, signed, scale 1/512)
+    buffer[0] = acceleration_longitudinal_ & 0xFF;
+    buffer[1] = (acceleration_longitudinal_ >> 8) & 0xFF;
+    
+    // Acceleration lateral (bit 16-31, signed, scale 1/512)
+    buffer[2] = acceleration_lateral_ & 0xFF;
+    buffer[3] = (acceleration_lateral_ >> 8) & 0xFF;
+    
+    // Yaw rate (bit 32-47, signed, scale 1/128)
+    buffer[4] = yaw_rate_ & 0xFF;
+    buffer[5] = (yaw_rate_ >> 8) & 0xFF;
+    
+    buffer[6] = 0;
+    buffer[7] = 0;
+    
+    void *requestData = static_cast<void *>(buffer);
+    unsigned int dlc = 6;
+    unsigned int flag = 0;
+    
+    stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
+    if (stat_ != canOK) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to write DV driving dynamics 2 to CAN bus");
+    }
+}
+
+void RosCan::send_dv_system_status() {
+    long id = 0x502;
+    unsigned char buffer[8] = {0};
+    
+    // AS_status (bit 0-2)
+    buffer[0] = as_status_ & 0x07;
+    
+    // ASB_EBS_state (bit 3-4)
+    buffer[0] |= (asb_ebs_state_ & 0x03) << 3;
+    
+    // AMI_state (bit 5-7)
+    buffer[0] |= (ami_state_ & 0x07) << 5;
+    
+    // Steering_state (bit 8, bool)
+    buffer[1] = steering_state_ ? 1 : 0;
+    
+    // ASB_redundancy_state (bit 9-10)
+    buffer[1] |= (asb_redundancy_state_ & 0x03) << 1;
+    
+    // Lap_counter (bit 11-14, unsigned)
+    buffer[1] |= (lap_counter_ & 0x0F) << 3;
+    
+    // Cones_count_actual (bit 15-22, unsigned)
+    buffer[1] |= (cones_count_actual_ & 0x01) << 7; // bit 15
+    buffer[2] = (cones_count_actual_ >> 1) & 0x7F;  // bits 16-22
+    
+    // Cones_count_all (bit 23-39, unsigned)
+    buffer[2] |= (cones_count_all_ & 0x01) << 7;    // bit 23
+    buffer[3] = (cones_count_all_ >> 1) & 0xFF;     // bits 24-31
+    buffer[4] = (cones_count_all_ >> 9) & 0xFF;     // bits 32-39
+    
+
+    buffer[5] = 0;
+    buffer[6] = 0;
+    buffer[7] = 0;
+    
+    void *requestData = static_cast<void *>(buffer);
+    unsigned int dlc = 5; 
+    unsigned int flag = 0;
+    
+    stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
+    if (stat_ != canOK) {
+        RCLCPP_ERROR(this->get_logger(), "Failed to write DV system status to CAN bus");
+    }
+}
+
+
 
 RosCan::~RosCan() {
   RCLCPP_INFO(this->get_logger(), "Shutting down CAN interface");
