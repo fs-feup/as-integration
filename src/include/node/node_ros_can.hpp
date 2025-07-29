@@ -9,6 +9,8 @@
 #include <string>
 
 #include "canlib_wrappers/ican_lib_wrapper.hpp"
+#include "custom_interfaces/msg/bms_errors.hpp"
+#include "custom_interfaces/msg/cells_temps.hpp"
 #include "custom_interfaces/msg/control_command.hpp"
 #include "custom_interfaces/msg/hydraulic_line_pressure.hpp"
 #include "custom_interfaces/msg/imu.hpp"
@@ -21,9 +23,10 @@
 #include "custom_interfaces/msg/temperature.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
-#include "custom_interfaces/msg/cells_temps.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "std_msgs/msg/float64.hpp"
+#include "std_msgs/msg/int32.hpp"
 #include "std_msgs/msg/int8.hpp"
 
 /**
@@ -64,6 +67,18 @@ private:
       inverter_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       bosch_steering_angle_publisher_;  ///< Publisher for Bosch steering angle
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
+      inverter_voltage_pub_;  ///< Publisher for inverter voltage(bamocar)
+  rclcpp::Publisher<custom_interfaces::msg::BmsErrors>::SharedPtr
+      bms_errors_pub_;  ///< Publisher for BMS errors
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
+      apps_higher_pub_;  ///< Publisher for APPs higher value
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
+      apps_lower_pub_;  ///< Publisher for APPs lower value
+  rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr
+      implausability_pub_;  ///< Publisher for implausibility status
+  rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
+      driving_state_pub_;  ///< Publisher for driving state
 
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       steering_motor_state_pub_;  ///< Publisher for CubeM Motor Steering angle
@@ -74,7 +89,10 @@ private:
   rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
       steering_motor_error;  // Publisher for steering motor error
 
-    rclcpp::Publisher<custom_interfaces::msg::CellsTemps>::SharedPtr cells_temps_pub_;  ///< Subscriber for control commands
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr _bamocar_current_pub;
+
+  rclcpp::Publisher<custom_interfaces::msg::CellsTemps>::SharedPtr
+      cells_temps_pub_;  ///< Subscriber cells temperatures
 
   rclcpp::Publisher<custom_interfaces::msg::HydraulicLinePressure>::SharedPtr
       hydraulic_line_pressure_publisher_;  ///< Publisher for hydraulic line pressure
@@ -87,7 +105,7 @@ private:
 
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF;  ///< Current operational state of the vehicle
-  int battery_voltage_ = 0;              ///< Battery voltage in volts, in Bamocar scale
+  int inverter_voltage_ = 0;             ///< Battery voltage in volts, in Bamocar scale
   int motor_speed_ = 0;                  ///< Motor speed in RPM, in Bamocar scale
   int motor_temp_ = 0;                   ///< Motor temp
   int inverter_temp_ = 0;                ///< Inverter temp
@@ -151,10 +169,12 @@ private:
    * @param flag CAN message flags - see kvaser documentation for more info
    * @param time Timestamp of the CAN message
    */
-  void can_interpreter(long id, const unsigned char msg[8], unsigned int, unsigned int,
+  void can_interpreter(long id, const unsigned char msg[8], unsigned int dlc, unsigned int,
                        unsigned long);
 
   void can_interpreter_cells_temps(const unsigned char msg[8]);
+
+  void can_interpreter_bamocar_current(const unsigned char msg[8]);
 
   /**
    * @brief Publishes the current operational status to ROS.
@@ -198,16 +218,16 @@ private:
    */
   void rl_rpm_publisher(const unsigned char msg[8]);
 
- /**
-  * @brief Publishes the front right RPM to ROS.
-  * @param msg CAN message data
-  */
+  /**
+   * @brief Publishes the front right RPM to ROS.
+   * @param msg CAN message data
+   */
   void fr_rpm_publisher(const unsigned char msg[8]);
 
- /**
-  * @brief Publishes the front left RPM to ROS.
-  * @param msg CAN message data
-  */
+  /**
+   * @brief Publishes the front left RPM to ROS.
+   * @param msg CAN message data
+   */
   void fl_rpm_publisher(const unsigned char msg[8]);
 
   /**
@@ -243,7 +263,7 @@ private:
    *
    * @param msg CAN message data
    */
-  void battery_voltage_callback(const unsigned char msg[8]);
+  void inverter_voltage_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Interprets the BAMOCAR CAN message.
@@ -345,6 +365,35 @@ private:
    * @return 0 on success, otherwise on failure
    */
   int bosch_steering_angle_set_origin();
+
+  /**
+   * @brief Publishes the BMS errors to ROS.
+   *
+   * @param msg CAN message data
+   * @param dlc Data length code
+   */
+  void bms_errors_publisher(const unsigned char msg[8], unsigned int dlc);
+
+  /**
+   * @brief Publishes the APPs higher value to ROS.
+   *
+   * @param msg CAN message data
+   */
+  void apps_higher_publisher(const unsigned char msg[8]);
+
+  /**
+   * @brief Publishes the APPs lower value to ROS.
+   *
+   * @param msg CAN message data
+   */
+  void apps_lower_publisher(const unsigned char msg[8]);
+
+  /**
+   * @brief Publishes the driving state to ROS.
+   *
+   * @param msg CAN message data
+   */
+  void driving_state_publisher(const unsigned char msg[8]);
 
 public:
   /**
