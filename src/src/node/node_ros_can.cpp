@@ -266,10 +266,10 @@ void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trig
   unsigned int flag = 0;
   RCLCPP_INFO(this->get_logger(), "Mission finished signal received, sending to CAN");
 
-  // stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
-  // if (stat_ != canOK) {
-  //   RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
-  // }
+  stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
+  if (stat_ != canOK) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
+  }
 }
 
 void RosCan::bosch_sa_reset_callack(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
@@ -808,7 +808,7 @@ void RosCan::bms_errors_publisher(const unsigned char msg[8], unsigned int dlc) 
   auto bms_errors_msg = custom_interfaces::msg::BmsErrors();
   bms_errors_msg.header.stamp = this->get_clock()->now();
 
-  bms_errors_pub_.bms_current = msg[6];
+  bms_errors_msg.bms_current = ((msg[6] << 8) | msg[7]) / 10.0;
 
   // if (dlc >= 2) {
   //   uint16_t error_bitmap_1 = (msg[1] << 8) | msg[0];
