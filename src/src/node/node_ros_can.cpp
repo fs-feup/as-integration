@@ -75,7 +75,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   this->velocities_subscription_ = this->create_subscription<custom_interfaces::msg::Velocities>(
       "/state_estimation/velocities", 10,
       [this](const custom_interfaces::msg::Velocities::SharedPtr msg) {
-          this->speed_actual_ = static_cast<uint8_t>(msg->velocity_x);
+          this->speed_actual_ = static_cast<uint8_t>(msg->velocity_x) * 3.6; // convert to km/h
       });
 
   this->map_subscription_ = this->create_subscription<custom_interfaces::msg::ConeArray>(
@@ -91,7 +91,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
 
   this->path_subscription_ = this->create_subscription<custom_interfaces::msg::PathPointArray>(
       "/path_planning/path", 10, [this](const custom_interfaces::msg::PathPointArray::SharedPtr msg) {
-          this->speed_target_ = static_cast<uint8_t>(msg->pathpoint_array[0].v);
+          this->speed_target_ = static_cast<uint8_t>(msg->pathpoint_array[0].v) * 3.6; // convert to km/h
       });
 
   // Services
@@ -545,7 +545,7 @@ void RosCan::can_interpreter_master(const unsigned char msg[8]) {
       break;
     }
     case MASTER_EBS_REDUNDANCY_STATE_CODE: {
-      this->asb_ebs_redundancy_state_ = static_cast<uint8_t>(msg[1]);
+      this->asb_redundancy_state_ = static_cast<uint8_t>(msg[1]);
       break;
     }
 
@@ -860,8 +860,10 @@ void RosCan::hydraulic_line_callback(const unsigned char msg[8]) {
   message.header.stamp = this->get_clock()->now();
   message.pressure = hydraulic_line_pressure;
 
-  this->brake_hydr_actual_ = static_cast<uint8_t>(hydraulic_line_pressure);
-  this->brake_hydr_target_ = static_cast<uint8_t>(hydraulic_line_pressure);
+  auto brake_percentage = static_cast<float>(hydraulic_line_pressure - 150) / 341 * 100.0f; // convert to percentage
+
+  this->brake_hydr_actual_ = static_cast<uint8_t>(brake_percentage);
+  this->brake_hydr_target_ = static_cast<uint8_t>(brake_percentage);
 
   hydraulic_line_pressure_publisher_->publish(message);
 }

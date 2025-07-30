@@ -10,7 +10,11 @@
 
 #include "canlib_wrappers/ican_lib_wrapper.hpp"
 #include "custom_interfaces/msg/control_command.hpp"
+#include "custom_interfaces/msg/cone_array.hpp"
+#include "custom_interfaces/msg/velocities.hpp"
 #include "custom_interfaces/msg/hydraulic_line_pressure.hpp"
+#include "custom_interfaces/msg/evaluator_control_data.hpp"
+#include "custom_interfaces/msg/path_point_array.hpp"
 #include "custom_interfaces/msg/imu.hpp"
 #include "custom_interfaces/msg/imu_acceleration.hpp"
 #include "custom_interfaces/msg/imu_data.hpp"
