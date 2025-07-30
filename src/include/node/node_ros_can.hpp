@@ -26,6 +26,7 @@
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
 #include "custom_interfaces/msg/cells_temps.hpp"
+#include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "std_msgs/msg/int8.hpp"
@@ -121,6 +122,9 @@ private:
 
   rclcpp::Subscription<custom_interfaces::msg::PathPointArray>::SharedPtr
       path_subscription_;  ///< Subscription for path data
+
+  rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr
+      movella_imu_subscription_;  ///< Subscription for path data
 
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr
       emergency_service_;  ///< Service for emergency handling

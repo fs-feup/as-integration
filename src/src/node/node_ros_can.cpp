@@ -76,6 +76,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       "/state_estimation/velocities", 10,
       [this](const custom_interfaces::msg::Velocities::SharedPtr msg) {
           this->speed_actual_ = static_cast<uint8_t>(msg->velocity_x) * 3.6; // convert to km/h
+          this->yaw_rate_ = static_cast<int16_t>(msg->angular_velocity * 180/ M_PI); // convert to degrees/s
       });
 
   this->map_subscription_ = this->create_subscription<custom_interfaces::msg::ConeArray>(
@@ -93,6 +94,14 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       "/path_planning/path", 10, [this](const custom_interfaces::msg::PathPointArray::SharedPtr msg) {
           this->speed_target_ = static_cast<uint8_t>(msg->pathpoint_array[0].v) * 3.6; // convert to km/h
       });
+
+  this->movella_imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
+      "/filter/free_acceleration", 10, [this](const geometry_msgs::msg::Vector3Stamped::SharedPtr msg) {
+          this->acceleration_longitudinal_ = msg->vector.x;
+          this->acceleration_lateral_ = msg->vector.y;
+      });
+  
+
 
   // Services
   emergency_service_ = this->create_service<std_srvs::srv::Trigger>(
@@ -653,9 +662,6 @@ void RosCan::imu_acc_publisher(const unsigned char msg[8]) {
   float acc_y = ((msg[2] << 8 | msg[3]) - 0X8000) * QUANTIZATION_ACC;
   float acc_z = ((msg[4] << 8 | msg[5]) - 0X8000) * QUANTIZATION_ACC;
 
-  acceleration_longitudinal_ = static_cast<int16_t>(acc_x * 512);
-  acceleration_lateral_ = static_cast<int16_t>(acc_y * 512);
-
   auto message = custom_interfaces::msg::ImuAcceleration();
   message.header.stamp = this->get_clock()->now();
   message.acc_x = acc_x;
@@ -682,7 +688,6 @@ void RosCan::imu_angular_velocity_publisher(const unsigned char msg[8]) {
   float pitch = ((msg[2] << 8 | msg[3]) - 0x8000) * QUANTIZATION_GYRO;
   float yaw = ((msg[4] << 8 | msg[5]) - 0x8000) * QUANTIZATION_GYRO;
 
-  yaw_rate_ = static_cast<int16_t>(yaw * 128);
 
   auto message = custom_interfaces::msg::YawPitchRoll();
   message.header.stamp = this->get_clock()->now();
@@ -917,16 +922,16 @@ void RosCan::send_dv_driving_dynamics_2() {
     unsigned char buffer[8] = {0};
     
     // Acceleration longitudinal (bit 0-15, signed, scale 1/512)
-    buffer[0] = acceleration_longitudinal_ & 0xFF;
-    buffer[1] = (acceleration_longitudinal_ >> 8) & 0xFF;
+    buffer[0] = (acceleration_longitudinal_ * 512) & 0xFF;
+    buffer[1] = ((acceleration_longitudinal_ * 512) >> 8) & 0xFF;
     
     // Acceleration lateral (bit 16-31, signed, scale 1/512)
-    buffer[2] = acceleration_lateral_ & 0xFF;
-    buffer[3] = (acceleration_lateral_ >> 8) & 0xFF;
+    buffer[2] = (acceleration_lateral_ * 512) & 0xFF;
+    buffer[3] = ((acceleration_lateral_ * 512) >> 8) & 0xFF;
     
     // Yaw rate (bit 32-47, signed, scale 1/128)
-    buffer[4] = yaw_rate_ & 0xFF;
-    buffer[5] = (yaw_rate_ >> 8) & 0xFF;
+    buffer[4] = (yaw_rate_ * 128) & 0xFF;
+    buffer[5] = ((yaw_rate_ * 128) >> 8) & 0xFF;
     
     buffer[6] = 0;
     buffer[7] = 0;

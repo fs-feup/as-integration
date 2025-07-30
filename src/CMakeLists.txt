@@ -14,7 +14,7 @@ find_package(std_msgs REQUIRED)
 find_package(custom_interfaces REQUIRED)
 find_package(canlib REQUIRED)
 find_package(std_srvs REQUIRED)
-
+find_package(geometry_msgs REQUIRED)
 
 set(IMPLEMENTATION_FILES 
   src/node/node_ros_can.cpp
@@ -22,7 +22,7 @@ set(IMPLEMENTATION_FILES
 )
 
 add_executable(${PROJECT_NAME} src/main.cpp ${IMPLEMENTATION_FILES})
-ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs std_srvs custom_interfaces canlib)
+ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs std_srvs custom_interfaces geometry_msgs canlib)
 target_link_libraries(ros_can canlib)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -46,7 +46,7 @@ if(BUILD_TESTING)
 
   # Unit tests
   ament_add_gmock(${PROJECT_NAME}_test ${TESTFILES} ${IMPLEMENTATION_FILES})
-  ament_target_dependencies(${PROJECT_NAME}_test rclcpp std_msgs std_srvs custom_interfaces canlib)
+  ament_target_dependencies(${PROJECT_NAME}_test rclcpp std_msgs std_srvs custom_interfaces geometry_msgs canlib)
   target_link_libraries(${PROJECT_NAME}_test canlib)
   target_include_directories(${PROJECT_NAME}_test PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
