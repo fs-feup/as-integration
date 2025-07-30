@@ -17,6 +17,10 @@
 
 #define MASTER_DBG_LOG_MSG_2 0x35
 
+#define MASTER_EBS_STATE_CODE 0x36
+
+#define MASTER_EBS_REDUNDANCY_STATE_CODE 0x37
+
 /*
  * value of msg[0] for RR RPM Code
  */
