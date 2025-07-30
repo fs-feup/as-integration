@@ -139,7 +139,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   timer_alive_msg_ = this->create_wall_timer(std::chrono::milliseconds(100),
                                              std::bind(&RosCan::alive_msg_callback, this));
 
-  dv_timer_ = this->create_wall_timer(std::chrono::milliseconds(100),
+  dv_timer_ = this->create_wall_timer(std::chrono::milliseconds(15),
                                    std::bind(&RosCan::dv_messages_callback, this));
 
   // initialize the CAN library
