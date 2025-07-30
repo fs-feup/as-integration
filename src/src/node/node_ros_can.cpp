@@ -494,16 +494,14 @@ void RosCan::can_interpreter_master(const unsigned char msg[8]) {
     case MASTER_AS_STATE_CODE: {
       if (msg[1] == 3) {  // If AS State == Driving
         this->go_signal_ = 1;
-        this->as_status_ = 3;     // DRIVING
       } else {
         this->go_signal_ = 0;
-        switch(msg[1]) {
-          case 0: this->as_status_ = 1; break;      // OFF
-          case 1: this->as_status_ = 2; break;      // READY
-          case 4: this->as_status_ = 4; break;      // EMERGENCY
-          case 5: this->as_status_ = 5; break;      // FINISHED
-          default: this->as_status_ = 1; break;     // Default to OFF
-        }
+      }
+      this->as_status_ = static_cast<uint8_t>(msg[1]);
+      if (this->as_status_ == 4) {
+        this->as_status_ = 5;
+      } else if (this->as_status_ == 5) {
+        this->as_status_ = 4;
       }
       op_status_publisher();
       break;
