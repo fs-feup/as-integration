@@ -527,7 +527,11 @@ void RosCan::can_interpreter_master(const unsigned char msg[8]) {
     case MASTER_AS_STATE_CODE: {
       if (msg[1] == 3) {  // If AS State == Driving
         this->go_signal_ = 1;
-      } else {
+      } else if (msg[1] == 2){
+        cubem_set_origin(); // If AS State == Ready
+      }
+      
+      else {
         this->go_signal_ = 0;
       }
       this->as_status_ = static_cast<uint8_t>(msg[1]);
