@@ -109,6 +109,15 @@ private:
   rclcpp::Publisher<custom_interfaces::msg::YawPitchRoll>::SharedPtr
       imu_angular_velocity_pub_;  ///< Publisher for IMU angular velocity data
 
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
+      manual_throttle_pub_;  ///< Publisher for manual throttle value
+  
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
+      manual_brake_pub_;  ///< Publisher for manual throttle value
+
+  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
+      apps_error_pub_;
+
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF;  ///< Current operational state of the vehicle
   int inverter_voltage_ = 0;             ///< Battery voltage in volts, in Bamocar scale
@@ -172,6 +181,10 @@ private:
     6 - Inspection
   */
   int as_mission_;  ///< Current mission index
+
+  int32_t apps_higher_value;
+
+  int32_t apps_lower_value;
 
   bool cubem_configuration_sent_ = false;  ///< Flag to check if Cubemars configuration is sent
 
@@ -349,6 +362,8 @@ private:
    * @param msg CAN message data
    */
   void master_logs_publisher(const unsigned char msg[8]);
+
+  void manual_throttle_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Publishes master log second message data.
