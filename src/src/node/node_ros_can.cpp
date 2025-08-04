@@ -88,7 +88,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   manual_brake_pub_ = this->create_publisher<std_msgs::msg::Float64>(
       "/vehicle/manual_brake", 10);
 
-  apps_error_pub_ = this->create_publisher<std_msgs::msg::Int32>(
+  apps_error_pub_ = this->create_publisher<std_msgs::msg::Float64>(
       "/vehicle/apps/error", 10);
 
   // Subscriptions
@@ -120,13 +120,13 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   this->lap_counter_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
       "/state_estimation/lap_counter", 10, [this](const std_msgs::msg::Float64::SharedPtr msg) {
         RCLCPP_INFO(this->get_logger(), "Lap count for CAN");
-        this->lap_counter_ = static_cast<int>(msg->data);
+        //this->lap_counter_ = static_cast<int>(msg->data);
       });
 
   this->path_subscription_ = this->create_subscription<custom_interfaces::msg::PathPointArray>(
       "/path_planning/path", 10, [this](const custom_interfaces::msg::PathPointArray::SharedPtr msg) {
           RCLCPP_INFO(this->get_logger(), "Path for CAN");
-          this->speed_target_ = static_cast<uint8_t>(msg->pathpoint_array[0].v) * 3.6; // convert to km/h
+          //this->speed_target_ = static_cast<uint8_t>(msg->pathpoint_array[0].v) * 3.6; // convert to km/h
       });
 
   this->movella_imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
@@ -1013,8 +1013,8 @@ void RosCan::apps_lower_publisher(const unsigned char msg[8]) {
   auto message = std_msgs::msg::Int32();
   message.data = apps_lower_value;
 
-  auto dif_message = std_msgs::msg::Int32();
-  dif_message.data = (apps_higher_value - apps_lower_value) / 480;
+  auto dif_message = std_msgs::msg::Float64();
+  dif_message.data = (apps_higher_value - apps_lower_value - 140) / 480.0;
   apps_error_pub_->publish(dif_message);
 
   apps_lower_pub_->publish(message);

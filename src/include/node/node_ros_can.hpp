@@ -115,7 +115,7 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
       manual_brake_pub_;  ///< Publisher for manual throttle value
 
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
       apps_error_pub_;
 
   // Enum to hold the state of the AS
