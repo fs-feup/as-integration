@@ -244,7 +244,7 @@ private:
 
   void can_interpreter_cells_temps(const unsigned char msg[8]);
 
-  void can_interpreter_bamocar_current(const unsigned char msg[8]);
+  void bamocar_current_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Publishes the current operational status to ROS.
