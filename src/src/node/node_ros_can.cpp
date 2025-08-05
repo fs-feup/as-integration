@@ -24,8 +24,6 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       this->create_publisher<custom_interfaces::msg::DataLogInfo1>("/vehicle/data_log_info_1", 10);
   data_log_info_2_pub_ =
       this->create_publisher<custom_interfaces::msg::DataLogInfo2>("/vehicle/data_log_info_2", 10);
-  data_log_info_3_pub_ =
-      this->create_publisher<custom_interfaces::msg::DataLogInfo3>("/vehicle/data_log_info_3", 10);
   rl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rl_rpm", 10);
   rr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rr_rpm", 10);
   motor_rpm_pub_ =
@@ -462,18 +460,14 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int d
     }
     case DATA_LOGGER_SIGNALS_1: {
       RCLCPP_INFO(this->get_logger(), "Received Data Logger Signals 1 message");
-
+      data_log_info_1_publisher(msg);
       break;
     }
     case DATA_LOGGER_SIGNALS_2: {
       RCLCPP_INFO(this->get_logger(), "Received Data Logger Signals 2 message");
+      data_log_info_2_publisher(msg);
       break;
     }
-    case DATA_LOGGER_SIGNALS_3: {
-      RCLCPP_INFO(this->get_logger(), "Received Data Logger Signals 3 message");
-      break;
-    } 
-    // Accelearation from IMU
     case IMU_ACC: {
       imu_acc_publisher(msg);
       break;
@@ -659,7 +653,7 @@ void RosCan::dash_interpreter(const unsigned char msg[8]) {
 }
 
 void RosCan::data_log_info_1_publisher(const unsigned char msg[8]) {
-  bool pneumatic_line_pressure = (msg[0] >> 7) & 0x01;
+  bool placeholder = (msg[0] >> 7) & 0x01;
   bool asms_on = (msg[0] >> 6) & 0x01;
   bool asats_pressed = (msg[0] >> 5) & 0x01;
   bool ats_pressed = (msg[0] >> 4) & 0x01;
@@ -678,7 +672,9 @@ void RosCan::data_log_info_1_publisher(const unsigned char msg[8]) {
   bool res_dead = msg[1] & 0x01;
   
   uint8_t state_checkup = msg[2] & 0x0F;
-  
+  bool pneumatic_line_pressure_1 = (msg[2] >> 7) & 0x01;
+  bool pneumatic_line_pressure_2 = (msg[2] >> 6) & 0x01;
+  bool pneumatic_line_pressure_main = (msg[2] >> 5) & 0x01;  
   uint32_t dc_voltage = (static_cast<uint32_t>(msg[3]) << 24) |
                         (static_cast<uint32_t>(msg[4]) << 16) |
                         (static_cast<uint32_t>(msg[5]) << 8) |
@@ -710,28 +706,16 @@ void RosCan::data_log_info_1_publisher(const unsigned char msg[8]) {
   data_log_info_1.dc_voltage = dc_voltage;
   data_log_info_1.mission = mission;
   data_log_info_1.state = state;
+  data_log_info_1.pneumatic_line_pressure_1 = pneumatic_line_pressure_1;
+  data_log_info_1.pneumatic_line_pressure_2 = pneumatic_line_pressure_2;
+  data_log_info_1.pneumatic_line_pressure_main = pneumatic_line_pressure_main;
+  data_log_info_1.placeholder = placeholder;
 
   data_log_info_1_pub_->publish(data_log_info_1);
 }
 
+
 void RosCan::data_log_info_2_publisher(const unsigned char msg[8]) {
-  bool pneumatic_line_pressure_1 = msg[0] & 0x01;
-  bool pneumatic_line_pressure_2 = msg[1] & 0x01;
-  bool master_sdc_closed = msg[2] & 0x01;
-  bool pneumatic_line_pressure = msg[3] & 0x01;
-
-  custom_interfaces::msg::DataLogInfo2 data_log_info_2;
-  data_log_info_2.header.stamp = this->get_clock()->now();
-  
-  data_log_info_2.pneumatic_line_pressure_1 = pneumatic_line_pressure_1;
-  data_log_info_2.pneumatic_line_pressure_2 = pneumatic_line_pressure_2;
-  data_log_info_2.master_sdc_closed = master_sdc_closed;
-  data_log_info_2.pneumatic_line_pressure = pneumatic_line_pressure;
-
-  data_log_info_2_pub_->publish(data_log_info_2);
-}
-
-void RosCan::data_log_info_3_publisher(const unsigned char msg[8]) {
   uint32_t hydraulic_line_front_pressure = (static_cast<uint32_t>(msg[0]) << 24) |
                                            (static_cast<uint32_t>(msg[1]) << 16) |
                                            (static_cast<uint32_t>(msg[2]) << 8) |
@@ -742,13 +726,12 @@ void RosCan::data_log_info_3_publisher(const unsigned char msg[8]) {
                                      (static_cast<uint32_t>(msg[6]) << 8) |
                                      static_cast<uint32_t>(msg[7]);
 
-  custom_interfaces::msg::DataLogInfo3 data_log_info_3;
-  data_log_info_3.header.stamp = this->get_clock()->now();
-  
-  data_log_info_3.hydraulic_line_front_pressure = hydraulic_line_front_pressure;
-  data_log_info_3.hydraulic_line_pressure = hydraulic_line_pressure;
+  custom_interfaces::msg::DataLogInfo2 data_log_info_2;
+  data_log_info_2.header.stamp = this->get_clock()->now();
 
-  data_log_info_3_pub_->publish(data_log_info_3);
+  data_log_info_2.hydraulic_line_front_pressure = hydraulic_line_front_pressure;
+  data_log_info_2.hydraulic_line_pressure = hydraulic_line_pressure;
+
 }
 
 void RosCan::op_status_publisher() {

@@ -20,7 +20,6 @@
 #include "custom_interfaces/msg/imu_data.hpp"
 #include "custom_interfaces/msg/data_log_info_1.hpp"
 #include "custom_interfaces/msg/data_log_info_2.hpp"
-#include "custom_interfaces/msg/data_log_info_3.hpp"
 #include "custom_interfaces/msg/operational_status.hpp"
 #include "custom_interfaces/msg/path_point_array.hpp"
 #include "custom_interfaces/msg/steering_angle.hpp"
@@ -67,8 +66,6 @@ private:
       data_log_info_1_pub_;  ///< Publisher for data log info 1
   rclcpp::Publisher<custom_interfaces::msg::DataLogInfo2>::SharedPtr
       data_log_info_2_pub_;  ///< Publisher for data log info 2
-  rclcpp::Publisher<custom_interfaces::msg::DataLogInfo3>::SharedPtr
-      data_log_info_3_pub_;  ///< Publisher for data log info 3
   rclcpp::Publisher<custom_interfaces::msg::Temperature>::SharedPtr
       motor_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::Temperature>::SharedPtr
@@ -357,7 +354,6 @@ private:
 
   void data_log_info_1_publisher(const unsigned char msg[8]);
   void data_log_info_2_publisher(const unsigned char msg[8]);
-  void data_log_info_3_publisher(const unsigned char msg[8]);
   void manual_throttle_publisher(const unsigned char msg[8]);
 
 
