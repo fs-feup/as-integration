@@ -73,6 +73,11 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   implausability_pub_ = this->create_publisher<std_msgs::msg::Bool>("/vehicle/implausability", 10);
   driving_state_pub_ = this->create_publisher<std_msgs::msg::Int8>("/vehicle/driving_state", 10);
 
+  this->can_line_0_stats_pub_ = this->create_publisher<custom_interfaces::msg::CanStatistics>(
+      "/vehicle/can_line_0_stats", 10);
+  this->can_line_1_stats_pub_ = this->create_publisher<custom_interfaces::msg::CanStatistics>(
+      "/vehicle/can_line_1_stats", 10);
+
   // Subscritpions
   control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
       "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
@@ -155,6 +160,9 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
 
   dv_timer_ = this->create_wall_timer(std::chrono::milliseconds(15),
                                    std::bind(&RosCan::dv_messages_callback, this));
+  
+  can_statistics_timer_ = this->create_wall_timer(
+      std::chrono::milliseconds(1000), std::bind(&RosCan::can_statistics_callback, this));
 
   // initialize the CAN library
   canInitializeLibrary();
@@ -429,6 +437,60 @@ int RosCan::bosch_steering_angle_set_origin() {
 
 // -------------- CAN TO ROS --------------
 
+void RosCan::can_statistics_callback() {
+  custom_interfaces::msg::CanStatistics stats0_msg;
+  custom_interfaces::msg::CanStatistics stats1_msg;
+
+  stats0_msg.header.stamp = this->get_clock()->now();
+  stats1_msg.header.stamp = stats0_msg.header.stamp;
+
+  bool success0 = read_can_statistics(hnd0_, stats0_msg);
+  bool success1 = read_can_statistics(hnd1_, stats1_msg);
+
+  if (success0) {
+    can_line_0_stats_pub_->publish(stats0_msg);
+  } else {
+    RCLCPP_WARN(this->get_logger(), "Failed to collect CAN statistics for line 0");
+  }
+
+  if (success1) {
+    can_line_1_stats_pub_->publish(stats1_msg);
+  } else {
+    RCLCPP_WARN(this->get_logger(), "Failed to collect CAN statistics for line 1");
+  }
+}
+
+bool RosCan::read_can_statistics(canHandle handle, custom_interfaces::msg::CanStatistics& msg) {
+  canBusStatistics stats;
+  canStatus status = canGetBusStatistics(handle, &stats, sizeof(stats));
+
+  if (status != canOK) {
+    return false;
+  }
+
+  // Fill fields from canBusStatistics
+  msg.load = static_cast<float>(stats.busLoad) / 100.0f;  // Convert 0–10000 → 0.00–100.00 %
+  msg.overrun_count = stats.overruns;
+
+  unsigned int txErr = 0, rxErr = 0, unused = 0;
+  if (canReadErrorCounters(handle, &txErr, &rxErr, &unused) == canOK) {
+    msg.tx_error_count = txErr;
+    msg.rx_error_count = rxErr;
+  }
+
+  unsigned long flags = 0;
+  if (canReadStatus(handle, &flags) == canOK) {
+    if (flags & canSTAT_BUS_OFF)
+      msg.status = 2;
+    else if (flags & canSTAT_ERROR_PASSIVE || flags & canSTAT_ERROR_WARNING)
+      msg.status = 1;
+    else
+      msg.status = 0;
+  }
+
+  return true;
+}
+
 void RosCan::can_sniffer() {
   long id;
   unsigned char msg[8];
@@ -685,8 +747,9 @@ void RosCan::data_log_info_1_publisher(const unsigned char msg[8]) {
 
   custom_interfaces::msg::DataLogInfo1 data_log_info_1;
   data_log_info_1.header.stamp = this->get_clock()->now();
-  
-  data_log_info_1.pneumatic_line_pressure = pneumatic_line_pressure;
+
+  data_log_info_1.pneumatic_line_pressure =
+      pneumatic_line_pressure_1 && pneumatic_line_pressure_2 && pneumatic_line_pressure_main;
   data_log_info_1.asms_on = asms_on;
   data_log_info_1.asats_pressed = asats_pressed;
   data_log_info_1.ats_pressed = ats_pressed;

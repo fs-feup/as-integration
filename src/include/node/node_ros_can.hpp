@@ -10,16 +10,17 @@
 
 #include "canlib_wrappers/ican_lib_wrapper.hpp"
 #include "custom_interfaces/msg/bms_errors.hpp"
+#include "custom_interfaces/msg/can_statistics.hpp"
 #include "custom_interfaces/msg/cells_temps.hpp"
 #include "custom_interfaces/msg/cone_array.hpp"
 #include "custom_interfaces/msg/control_command.hpp"
+#include "custom_interfaces/msg/data_log_info1.hpp"
+#include "custom_interfaces/msg/data_log_info2.hpp"
 #include "custom_interfaces/msg/evaluator_control_data.hpp"
 #include "custom_interfaces/msg/hydraulic_line_pressure.hpp"
 #include "custom_interfaces/msg/imu.hpp"
 #include "custom_interfaces/msg/imu_acceleration.hpp"
 #include "custom_interfaces/msg/imu_data.hpp"
-#include "custom_interfaces/msg/data_log_info_1.hpp"
-#include "custom_interfaces/msg/data_log_info_2.hpp"
 #include "custom_interfaces/msg/operational_status.hpp"
 #include "custom_interfaces/msg/path_point_array.hpp"
 #include "custom_interfaces/msg/steering_angle.hpp"
@@ -84,6 +85,10 @@ private:
       implausability_pub_;  ///< Publisher for implausibility status
   rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
       driving_state_pub_;  ///< Publisher for driving state
+  rclcpp::Publisher<custom_interfaces::msg::CanStatistics>::SharedPtr
+      can_line_0_stats_pub_;  ///< Publisher for statistics of the first CAN line
+  rclcpp::Publisher<custom_interfaces::msg::CanStatistics>::SharedPtr
+      can_line_1_stats_pub_;  ///< Publisher for statistics of the second CAN line
 
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       steering_motor_state_pub_;  ///< Publisher for CubeM Motor Steering angle
@@ -161,6 +166,7 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;            ///< Timer for periodic tasks
   rclcpp::TimerBase::SharedPtr timer_alive_msg_;  ///< Timer for sending alive messages
   rclcpp::TimerBase::SharedPtr dv_timer_;         ///< Timer for sending driving dynamics messages
+  rclcpp::TimerBase::SharedPtr can_statistics_timer_;  ///< Timer for CAN statistics
 
   canHandle hnd0_;  ///< Handle to the CAN channel
   canHandle hnd1_;  ///< Handle to the CAN channel
@@ -240,6 +246,21 @@ private:
   void can_interpreter_cells_temps(const unsigned char msg[8]);
 
   void can_interpreter_bamocar_current(const unsigned char msg[8]);
+
+  /**
+   * @brief Reads the statistics of the CAN lines and publishes them to ROS.
+   * 
+   */
+  void can_statistics_callback();
+
+    /**
+     * @brief Reads the CAN statistics for a specific channel and populates the message.
+     * @param handle CAN handle of the channel
+     * @param msg Message to populate with statistics
+     * @return true if statistics were read successfully, false otherwise
+     */
+  bool read_can_statistics(canHandle handle, custom_interfaces::msg::CanStatistics& msg);
+
 
   /**
    * @brief Publishes the current operational status to ROS.
