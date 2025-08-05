@@ -587,7 +587,6 @@ void RosCan::can_interpreter_master(const unsigned char msg[8]) {
           break;
       }
 
-
       op_status_publisher();
       break;
     }
@@ -960,7 +959,7 @@ void RosCan::bms_errors_publisher(const unsigned char msg[8], unsigned int dlc) 
   auto bms_errors_msg = custom_interfaces::msg::BmsErrors();
   bms_errors_msg.header.stamp = this->get_clock()->now();
 
-  bms_errors_msg.bms_current = ((msg[6] << 8) | msg[7]) / 10.0;
+  bms_errors_msg.bms_current = static_cast<int16_t>((msg[6] << 8) | msg[7]) / 10.0;
 
   // if (dlc >= 2) {
   //   uint16_t error_bitmap_1 = (msg[1] << 8) | msg[0];
