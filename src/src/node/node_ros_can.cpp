@@ -462,6 +462,7 @@ void RosCan::can_statistics_callback() {
 
 bool RosCan::read_can_statistics(canHandle handle, custom_interfaces::msg::CanStatistics& msg) {
   canBusStatistics stats;
+  canRequestBusStatistics(handle);
   canStatus status = canGetBusStatistics(handle, &stats, sizeof(stats));
 
   if (status != canOK) {
