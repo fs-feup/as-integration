@@ -93,7 +93,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   manual_brake_pub_ = this->create_publisher<std_msgs::msg::Float64>(
       "/vehicle/manual_brake", 10);
 
-  apps_error_pub_ = this->create_publisher<std_msgs::msg::Int32>(
+  apps_error_pub_ = this->create_publisher<std_msgs::msg::Float64>(
       "/vehicle/apps/error", 10);
 
   // Subscriptions
@@ -102,7 +102,6 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
 
   this->perception_subscription_ = this->create_subscription<custom_interfaces::msg::ConeArray>(
       "/perception/cones", 10, [this](const custom_interfaces::msg::ConeArray::SharedPtr msg) {
-          RCLCPP_INFO(this->get_logger(), "Cones for CAN");
           auto const &cone_array = msg->cone_array;
           this->cones_count_actual_ = static_cast<uint8_t>(cone_array.size());
       });
@@ -110,28 +109,24 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   this->velocities_subscription_ = this->create_subscription<custom_interfaces::msg::Velocities>(
       "/state_estimation/velocities", 10,
       [this](const custom_interfaces::msg::Velocities::SharedPtr msg) {
-          RCLCPP_INFO(this->get_logger(), "Velocities for CAN");
           this->speed_actual_ = static_cast<uint8_t>(msg->velocity_x) * 3.6; // convert to km/h
           this->yaw_rate_ = static_cast<int16_t>(msg->angular_velocity * 180/ M_PI); // convert to degrees/s
       });
 
   this->map_subscription_ = this->create_subscription<custom_interfaces::msg::ConeArray>(
       "/state_estimation/map", 10, [this](const custom_interfaces::msg::ConeArray::SharedPtr msg) {
-          RCLCPP_INFO(this->get_logger(), "Map for CAN");
           auto const &cone_array = msg->cone_array;
           this->cones_count_all_ = static_cast<uint16_t>(cone_array.size());
       });
 
   this->lap_counter_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
       "/state_estimation/lap_counter", 10, [this](const std_msgs::msg::Float64::SharedPtr msg) {
-        RCLCPP_INFO(this->get_logger(), "Lap count for CAN");
-        this->lap_counter_ = static_cast<int>(msg->data);
+        //this->lap_counter_ = static_cast<int>(msg->data);
       });
 
   this->path_subscription_ = this->create_subscription<custom_interfaces::msg::PathPointArray>(
       "/path_planning/path", 10, [this](const custom_interfaces::msg::PathPointArray::SharedPtr msg) {
-          RCLCPP_INFO(this->get_logger(), "Path for CAN");
-          this->speed_target_ = static_cast<uint8_t>(msg->pathpoint_array[0].v) * 3.6; // convert to km/h
+          //this->speed_target_ = static_cast<uint8_t>(msg->pathpoint_array[0].v) * 3.6; // convert to km/h
       });
 
   this->movella_imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
@@ -569,7 +564,7 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int d
   }
 }
 
-void RosCan::can_interpreter_bamocar_current(const unsigned char msg[8]) {
+void RosCan::bamocar_current_publisher(const unsigned char msg[8]) {
   std_msgs::msg::Int32 temp;
   int16_t current = static_cast<int16_t>((msg[2] << 8) | msg[1]);
   temp.data = current;
@@ -594,9 +589,8 @@ void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
       inverter_temp_publisher(msg);
       break;
     }
-
     case BAMO_CURRENT_ID: {
-      can_interpreter_bamocar_current(msg);
+      bamocar_current_publisher(msg);
       break;
     }
     default:
@@ -657,7 +651,6 @@ void RosCan::can_interpreter_master(const unsigned char msg[8]) {
           break;
       }
 
-
       op_status_publisher();
       break;
     }
@@ -669,7 +662,7 @@ void RosCan::can_interpreter_master(const unsigned char msg[8]) {
       this->asb_redundancy_state_ = static_cast<uint8_t>(msg[1]);
       break;
     }
-
+    case 
     case TEENSY_RR_RPM_CODE: {
       rr_rpm_publisher(msg);
       break;
@@ -1052,7 +1045,7 @@ void RosCan::bms_errors_publisher(const unsigned char msg[8], unsigned int dlc) 
   auto bms_errors_msg = custom_interfaces::msg::BmsErrors();
   bms_errors_msg.header.stamp = this->get_clock()->now();
 
-  bms_errors_msg.bms_current = ((msg[6] << 8) | msg[7]) / 10.0;
+  bms_errors_msg.bms_current = static_cast<int16_t>((msg[6] << 8) | msg[7]) / 10.0;
 
   // if (dlc >= 2) {
   //   uint16_t error_bitmap_1 = (msg[1] << 8) | msg[0];
@@ -1105,8 +1098,8 @@ void RosCan::apps_lower_publisher(const unsigned char msg[8]) {
   auto message = std_msgs::msg::Int32();
   message.data = apps_lower_value;
 
-  auto dif_message = std_msgs::msg::Int32();
-  dif_message.data = (apps_higher_value - apps_lower_value) / 480;
+  auto dif_message = std_msgs::msg::Float64();
+  dif_message.data = (apps_higher_value - apps_lower_value - 140) / 480.0;
   apps_error_pub_->publish(dif_message);
 
   apps_lower_pub_->publish(message);
