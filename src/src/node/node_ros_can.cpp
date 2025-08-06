@@ -24,36 +24,36 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
       this->create_publisher<custom_interfaces::msg::DataLogInfo1>("/vehicle/data_log_info_1", 10);
   data_log_info_2_pub_ =
       this->create_publisher<custom_interfaces::msg::DataLogInfo2>("/vehicle/data_log_info_2", 10);
-  rl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rl_rpm", 10);
-  rr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rr_rpm", 10);
+  rl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rl_rpm", 10); // DEPRECATED
+  rr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/rr_rpm", 10); // DEPRECATED
   motor_rpm_pub_ =
       this->create_publisher<custom_interfaces::msg::WheelRPM>("/vehicle/motor_rpm", 10);
   motor_temp_pub_ =
       this->create_publisher<custom_interfaces::msg::Temperature>("/vehicle/motor_temp", 10);
   inverter_temp_pub_ =
-      this->create_publisher<custom_interfaces::msg::Temperature>("/vehicle/inverter_temp", 10);
+      this->create_publisher<custom_interfaces::msg::Temperature>("/vehicle/inverter_temp", 10); // DEPRECATED
   imu_acc_pub_ =
-      this->create_publisher<custom_interfaces::msg::ImuAcceleration>("/vehicle/acceleration", 10);
+      this->create_publisher<custom_interfaces::msg::ImuAcceleration>("/vehicle/acceleration", 10); // DEPRECATED
   imu_angular_velocity_pub_ =
-      this->create_publisher<custom_interfaces::msg::YawPitchRoll>("/vehicle/angular_velocity", 10);
+      this->create_publisher<custom_interfaces::msg::YawPitchRoll>("/vehicle/angular_velocity", 10); // DEPRECATED
   bosch_steering_angle_publisher_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
       "/vehicle/bosch_steering_angle", 10);
 
   cells_temps_pub_ =
-      this->create_publisher<custom_interfaces::msg::CellsTemps>("vehicle/cells/temperature", 10);
+      this->create_publisher<custom_interfaces::msg::CellsTemps>("/vehicle/cells/temperature", 10);
   _inverter_errors_pub_ =
       this->create_publisher<custom_interfaces::msg::BamocarErrors>("/vehicle/inverter_errors", 10);
   _bamocar_current_pub =
-      this->create_publisher<std_msgs::msg::Int32>("/vehicle/bamocar_current", 10);
+      this->create_publisher<std_msgs::msg::Int32>("/vehicle/bamocar_current", 10); // TODO: not working
 
   steering_motor_state_pub_ = this->create_publisher<custom_interfaces::msg::SteeringAngle>(
-      "/vehicle/steering_motor_state", 10);
+      "/vehicle/steering_motor_state", 10); 
   steering_motor_temperature =
-      this->create_publisher<std_msgs::msg::Int8>("/vehicle/steering_motor_temperature", 10);
+      this->create_publisher<std_msgs::msg::Int8>("/vehicle/steering_motor_temperature", 10); 
   steering_motor_current =
-      this->create_publisher<std_msgs::msg::Float64>("/vehicle/steering_motor_current", 10);
+      this->create_publisher<std_msgs::msg::Float64>("/vehicle/steering_motor_current", 10); 
   steering_motor_error =
-      this->create_publisher<std_msgs::msg::Int8>("/vehicle/steering_motor_error", 10);
+      this->create_publisher<std_msgs::msg::Int8>("/vehicle/steering_motor_error", 10); 
 
   hydraulic_line_pressure_publisher_ =
       this->create_publisher<custom_interfaces::msg::HydraulicLinePressure>(
@@ -65,8 +65,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   inverter_voltage_pub_ =
       this->create_publisher<std_msgs::msg::Int32>("/vehicle/inverter_voltage", 10);
 
-  bms_errors_pub_ =
-      this->create_publisher<custom_interfaces::msg::BmsErrors>("/vehicle/battery_errors", 10);
+  bms_custom_pub_ =
+      this->create_publisher<custom_interfaces::msg::BmsErrors>("/vehicle/bms_custom", 10);
 
   apps_higher_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/apps/higher", 10);
   apps_lower_pub_ = this->create_publisher<std_msgs::msg::Int32>("/vehicle/apps/lower", 10);
@@ -79,25 +79,23 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   this->can_line_1_stats_pub_ = this->create_publisher<custom_interfaces::msg::CanStatistics>(
       "/vehicle/can_line_1_stats", 10);
 
-  // Subscritpions
-  control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
-      "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
-
+      
   fr_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>(
-      "/vehicle/fr_rpm", 10);
+    "/vehicle/fr_rpm", 10);
   fl_rpm_pub_ = this->create_publisher<custom_interfaces::msg::WheelRPM>(
-      "/vehicle/fl_rpm", 10);
-
+    "/vehicle/fl_rpm", 10);
+    
   manual_throttle_pub_ = this->create_publisher<std_msgs::msg::Float64>(
-      "/vehicle/manual_throttle", 10);
-  
+    "/vehicle/manual_throttle", 10);
+        
   manual_brake_pub_ = this->create_publisher<std_msgs::msg::Float64>(
-      "/vehicle/manual_brake", 10);
+    "/vehicle/manual_brake", 10);
 
   apps_error_pub_ = this->create_publisher<std_msgs::msg::Float64>(
-      "/vehicle/apps/error", 10);
+    "/vehicle/apps/error", 10);
 
-  // Subscriptions
+
+  // Subscritpions
   control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
       "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
 
@@ -171,8 +169,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   canInitializeLibrary();
   // A channel to a CAN circuit is opened. The channel depend on the hardware
 
-  hnd0_ = canOpenChannel(0, canOPEN_EXCLUSIVE);  // TODO: this will be used only for SAS
-  hnd1_ = canOpenChannel(1, canOPEN_EXCLUSIVE);  // TODO: this is for everything else
+  hnd0_ = canOpenChannel(0, canOPEN_EXCLUSIVE);  // this will be used only for SAS
+  hnd1_ = canOpenChannel(1, canOPEN_EXCLUSIVE);  // this is for everything else
   // Setup CAN parameters for the channel
   stat_ = canSetBusParams(hnd0_, canBITRATE_500K, 0, 0, 4, 0, 0);  // check these values later
   stat_ = canSetBusParams(hnd1_, canBITRATE_1M, 0, 0, 4, 0, 0);    // check these values later
@@ -240,7 +238,7 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
     send_steering_control(steering_angle_command);
     send_throttle_control(msg->throttle);
   } else {
-    RCLCPP_INFO(this->get_logger(), "No go signal!");
+    RCLCPP_DEBUG(this->get_logger(), "No go signal!");
   }
 }
 
@@ -531,12 +529,14 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int d
       imu_acc_publisher(msg);
       break;
     }
-
     case IMU_GYRO: {
       imu_angular_velocity_publisher(msg);
       break;
     }
-
+    case BAMO_COMMAND_ID: {
+      manual_throttle_publisher(msg);
+      break;
+    }
     case TEENSY_DASH: {
       dash_interpreter(msg);
       break;
@@ -570,7 +570,7 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int d
       if (dlc >= 2) {  // At least board_id + msg_index
         uint8_t board_id_from_payload = msg[0];
         uint8_t msg_index = msg[1];
-        if (board_id_from_payload == id) {
+        if (board_id_from_payload + ALL_TEMPS_ID == id) {
           this->process_cell_temperatures(msg, board_id_from_payload, msg_index, dlc);
         }
       } 
@@ -611,7 +611,7 @@ void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
       break;
     }
     case BAMO_ERRORS_ID: {
-
+      publish_bamocar_errors(msg);
       break;
     }
     default:
@@ -799,7 +799,8 @@ void RosCan::data_log_info_2_publisher(const unsigned char msg[8]) {
 
   data_log_info_2.hydraulic_line_front_pressure = hydraulic_line_front_pressure;
   data_log_info_2.hydraulic_line_pressure = hydraulic_line_pressure;
-
+  data_log_info_2_pub_->publish(data_log_info_2);
+  RCLCPP_DEBUG(this->get_logger(), "Received Hydraulic Pressures Message");
 }
 
 void RosCan::op_status_publisher() {
@@ -1027,11 +1028,10 @@ void RosCan::manual_throttle_publisher(const unsigned char msg[8]) {
   int throttle_command = (static_cast<int>(msg[2]) << 8) |
                          static_cast<int>(msg[1]);
 
-  // Sign extension for 16-bit signed value (if needed)
-  if (throttle_command & 0x8000) {
-    throttle_command |= 0xFFFF0000;
-  }
-  double throttle_value_ros = static_cast<double>(throttle_command) / BAMOCAR_MAX_SCALE;
+  double throttle_value_ros = static_cast<double>(throttle_command) / BAMOCAR_MAX_SCALE * 100;
+
+  RCLCPP_INFO(this->get_logger(), "Received throttle command: %d, value: %f",
+               throttle_command, throttle_value_ros);
   
   std_msgs::msg::Float64 throttle_msg;
   throttle_msg.data = static_cast<int>(throttle_value_ros);
@@ -1101,7 +1101,7 @@ void RosCan::bms_errors_publisher(const unsigned char msg[8], unsigned int dlc) 
   //   bms_errors_msg.input_power_supply_fault = (error_bitmap_2 & (1 << 14)) != 0;
   //   bms_errors_msg.charge_limit_enforcement_fault = (error_bitmap_2 & (1 << 15)) != 0;
   // }
-  bms_errors_pub_->publish(bms_errors_msg);
+  bms_custom_pub_->publish(bms_errors_msg);
 }
 
 void RosCan::apps_higher_publisher(const unsigned char msg[8]) {
@@ -1118,7 +1118,7 @@ void RosCan::apps_lower_publisher(const unsigned char msg[8]) {
   message.data = apps_lower_value;
 
   auto dif_message = std_msgs::msg::Float64();
-  dif_message.data = (apps_higher_value - apps_lower_value - 140) / 480.0;
+  dif_message.data = abs((apps_higher_value - apps_lower_value - 140) / 480.0) * 100;
   apps_error_pub_->publish(dif_message);
 
   apps_lower_pub_->publish(message);

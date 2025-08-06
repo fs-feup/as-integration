@@ -79,7 +79,7 @@ private:
       inverter_voltage_pub_;  ///< Publisher for inverter voltage(bamocar)
   rclcpp::Publisher<custom_interfaces::msg::BamocarErrors>::SharedPtr _inverter_errors_pub_;  ///< Publisher for inverter errors
   rclcpp::Publisher<custom_interfaces::msg::BmsErrors>::SharedPtr
-      bms_errors_pub_;  ///< Publisher for BMS errors
+      bms_custom_pub_;  ///< Publisher for BMS errors
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
       apps_higher_pub_;  ///< Publisher for APPs higher value
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
