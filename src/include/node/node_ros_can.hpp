@@ -119,7 +119,8 @@ private:
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
       manual_brake_pub_;  ///< Publisher for manual throttle value
 
-  rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr apps_error_pub_;
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
+      apps_error_pub_;
 
   // Enum to hold the state of the AS
   State current_state_ = State::AS_OFF;  ///< Current operational state of the vehicle
@@ -245,7 +246,7 @@ private:
 
   void can_interpreter_cells_temps(const unsigned char msg[8]);
 
-  void can_interpreter_bamocar_current(const unsigned char msg[8]);
+  void bamocar_current_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Reads the statistics of the CAN lines and publishes them to ROS.
