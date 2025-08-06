@@ -12,6 +12,7 @@
 #include "custom_interfaces/msg/bms_errors.hpp"
 #include "custom_interfaces/msg/can_statistics.hpp"
 #include "custom_interfaces/msg/cells_temps.hpp"
+#include "custom_interfaces/msg/bamocar_errors.hpp"
 #include "custom_interfaces/msg/cone_array.hpp"
 #include "custom_interfaces/msg/control_command.hpp"
 #include "custom_interfaces/msg/data_log_info1.hpp"
@@ -50,6 +51,7 @@ private:
    * @brief Represents the various operational states of the vehicle.
    */
   enum class State { AS_MANUAL, AS_OFF, AS_READY, AS_DRIVING, AS_FINISHED, AS_EMERGENCY };
+
   rclcpp::Publisher<custom_interfaces::msg::OperationalStatus>::SharedPtr
       operational_status_;  ///< Publisher for operational status
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
@@ -75,6 +77,7 @@ private:
       bosch_steering_angle_publisher_;  ///< Publisher for Bosch steering angle
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
       inverter_voltage_pub_;  ///< Publisher for inverter voltage(bamocar)
+  rclcpp::Publisher<custom_interfaces::msg::BamocarErrors>::SharedPtr _inverter_errors_pub_;  ///< Publisher for inverter errors
   rclcpp::Publisher<custom_interfaces::msg::BmsErrors>::SharedPtr
       bms_errors_pub_;  ///< Publisher for BMS errors
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr
@@ -117,12 +120,47 @@ private:
       manual_throttle_pub_;  ///< Publisher for manual throttle value
 
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
-      manual_brake_pub_;  ///< Publisher for manual throttle value
+      manual_brake_pub_;  ///< Publisher for manual brake value
 
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
       apps_error_pub_;
+      
+  std::shared_ptr<ICanLibWrapper> can_lib_wrapper_;  ///< Wrapper for CAN library  
+  // rclcpp::Subscription<std_msgs::msg::String::SharedPtr> busStatus;
+  rclcpp::Subscription<custom_interfaces::msg::ControlCommand>::SharedPtr
+  control_listener_;  ///< Subscription for control commands  
+  rclcpp::Subscription<custom_interfaces::msg::ConeArray>::SharedPtr
+  perception_subscription_;  ///< Subscription for perception data  
+  rclcpp::Subscription<custom_interfaces::msg::Velocities>::SharedPtr
+  velocities_subscription_;  ///< Subscription for velocity data  
+  rclcpp::Subscription<custom_interfaces::msg::ConeArray>::SharedPtr
+  map_subscription_;  ///< Subscription for map data  
+  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr
+  lap_counter_subscription_;  ///< Subscription for lap counter data  
+  rclcpp::Subscription<custom_interfaces::msg::EvaluatorControlData>::SharedPtr
+  evaluator_subscription_;  ///< Subscription for evaluator data  
+  rclcpp::Subscription<custom_interfaces::msg::PathPointArray>::SharedPtr
+  path_subscription_;  ///< Subscription for path data  
+  rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr
+  movella_imu_subscription_;  ///< Subscription for path data  
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr
+  emergency_service_;  ///< Service for emergency handling
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr
+  mission_finished_service_;  ///< Service for mission status updates
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr
+  bosch_steering_angle_reset_service_;        ///< Service for reset bosch steering angle
+  rclcpp::TimerBase::SharedPtr timer_;            ///< Timer for periodic tasks
+  rclcpp::TimerBase::SharedPtr timer_alive_msg_;  ///< Timer for sending alive messages
+  rclcpp::TimerBase::SharedPtr dv_timer_;         ///< Timer for sending driving dynamics messages
+  rclcpp::TimerBase::SharedPtr can_statistics_timer_;  ///< Timer for CAN statistics  
+  rclcpp::TimerBase::SharedPtr _cell_temps_timer_;  ///< Timer for cell temperatures
+  canHandle hnd0_;  ///< Handle to the CAN channel
+  canHandle hnd1_;  ///< Handle to the CAN channel  
+  canStatus stat_;  ///< Status of the last CANlib call  
 
-  // Enum to hold the state of the AS
+
+  // Internal Logging Variables  
+
   State current_state_ = State::AS_OFF;  ///< Current operational state of the vehicle
   int inverter_voltage_ = 0;             ///< Battery voltage in volts, in Bamocar scale
   int motor_speed_ = 0;                  ///< Motor speed in RPM, in Bamocar scale
@@ -130,66 +168,24 @@ private:
   int inverter_temp_ = 0;                ///< Inverter temp
   int hydraulic_line_pressure_ = 0;      ///< Hydraulic line pressure
   double steering_angle_ = 0.0;          ///< Steering angle in radians (steering column)
-
-  std::shared_ptr<ICanLibWrapper> can_lib_wrapper_;  ///< Wrapper for CAN library
-
-  // rclcpp::Subscription<std_msgs::msg::String::SharedPtr> busStatus;
-  rclcpp::Subscription<custom_interfaces::msg::ControlCommand>::SharedPtr
-      control_listener_;  ///< Subscription for control commands
-
-  rclcpp::Subscription<custom_interfaces::msg::ConeArray>::SharedPtr
-      perception_subscription_;  ///< Subscription for perception data
-
-  rclcpp::Subscription<custom_interfaces::msg::Velocities>::SharedPtr
-      velocities_subscription_;  ///< Subscription for velocity data
-
-  rclcpp::Subscription<custom_interfaces::msg::ConeArray>::SharedPtr
-      map_subscription_;  ///< Subscription for map data
-
-  rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr
-      lap_counter_subscription_;  ///< Subscription for lap counter data
-
-  rclcpp::Subscription<custom_interfaces::msg::EvaluatorControlData>::SharedPtr
-      evaluator_subscription_;  ///< Subscription for evaluator data
-
-  rclcpp::Subscription<custom_interfaces::msg::PathPointArray>::SharedPtr
-      path_subscription_;  ///< Subscription for path data
-
-  rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr
-      movella_imu_subscription_;  ///< Subscription for path data
-
-  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr
-      emergency_service_;  ///< Service for emergency handling
-  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr
-      mission_finished_service_;  ///< Service for mission status updates
-  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr
-      bosch_steering_angle_reset_service_;        ///< Service for reset bosch steering angle
-  rclcpp::TimerBase::SharedPtr timer_;            ///< Timer for periodic tasks
-  rclcpp::TimerBase::SharedPtr timer_alive_msg_;  ///< Timer for sending alive messages
-  rclcpp::TimerBase::SharedPtr dv_timer_;         ///< Timer for sending driving dynamics messages
-  rclcpp::TimerBase::SharedPtr can_statistics_timer_;  ///< Timer for CAN statistics
-
-  canHandle hnd0_;  ///< Handle to the CAN channel
-  canHandle hnd1_;  ///< Handle to the CAN channel
-
-  canStatus stat_;  ///< Status of the last CANlib call
-
-  bool go_signal_ = false;  ///< Flag to control vehicle (false - stop/ true - go)
-
+  bool go_signal_ = false;  ///< Flag to control vehicle (false - stop/ true - go)  
   /* Current Mission:
-    0 - Manual
-    1 - Acceleration
-    2 - Skidpad
-    3 - Autocross
-    4 - Trackdrive
-    5 - EBS_Test
-    6 - Inspection
+  0 - Manual
+  1 - Acceleration
+  2 - Skidpad
+  3 - Autocross
+  4 - Trackdrive
+  5 - EBS_Test
+  6 - Inspection
   */
   int as_mission_;  ///< Current mission index
 
-  int32_t apps_higher_value;
-
-  int32_t apps_lower_value;
+  int32_t apps_higher_value; ///< Value of the higher APPS (throttle sensor)
+  int32_t apps_lower_value; ///< Value of the lower APPS (throttle sensor)
+  int8_t _cells_temps_[120];  ///< Array to hold temperatures of all cells
+  int8_t _cells_temps_max_ = 0;  ///< Maximum temperature of all cells
+  int8_t _cells_temps_avg_ = 0;  ///< Average temperature of
+  int8_t _cells_temps_min_ = 0;
 
   bool cubem_configuration_sent_ = false;  ///< Flag to check if Cubemars configuration is sent
 
@@ -244,7 +240,7 @@ private:
   void can_interpreter(long id, const unsigned char msg[8], unsigned int dlc, unsigned int,
                        unsigned long);
 
-  void can_interpreter_cells_temps(const unsigned char msg[8]);
+  void bms_cells_temps_callback(const unsigned char msg[8]);
 
   void bamocar_current_publisher(const unsigned char msg[8]);
 
@@ -473,10 +469,34 @@ private:
    * @param msg CAN message data
    */
   void driving_state_publisher(const unsigned char msg[8]);
+
+  /**
+   * @brief Publishes FSG Datalogger messages to CAN
+   */
   void send_dv_driving_dynamics_1();
   void send_dv_driving_dynamics_2();
   void send_dv_system_status();
   void dv_messages_callback();
+
+  /**
+   * @brief Publishes cell temperature data to ROS.
+   * 
+   * @param msg CAN message data
+   * @param stack_id Cell ID for which the temperature is being published
+   */
+  void process_cell_temperatures(const unsigned char msg[8], uint8_t stack_id, uint8_t msg_index, unsigned int dlc);
+
+  /**
+   * @brief Periodically publishes cell temperatures to ROS.
+   * This function collects the cell temperatures from the internal array and publishes them.
+   */
+  void publish_cell_temperatures();
+
+  /**
+   * @brief Publishes the Bamocar errors to ROS.
+   * @param msg CAN message data
+   */
+  void publish_bamocar_errors(const unsigned char msg[8]);
 
 public:
   /**

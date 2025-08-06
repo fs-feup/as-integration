@@ -13,12 +13,16 @@
  */
 #define MASTER_AS_MISSION_CODE 0x32
 
+/**
+ * debug messages from Master
+ */
 #define MASTER_DBG_LOG_MSG 0x34
-
 #define MASTER_DBG_LOG_MSG_2 0x35
 
+/**
+ * EBS state from Master for FSG Data Logger
+ */
 #define MASTER_EBS_STATE_CODE 0x36
-
 #define MASTER_EBS_REDUNDANCY_STATE_CODE 0x37
 
 /*
@@ -81,10 +85,44 @@
 // constexpr auto BAMOCAR_INVERTER_TEMP_CODE 0x4a;
 #define BAMOCAR_INVERTER_TEMP_CODE 0x4a
 
+/**
+ * Message code for Bamocar current
+ */
+#define BAMO_CURRENT_ID 0x20
+
+/**
+ * Message code for Bamocar LOGICMAP Errors
+ */
+#define BAMO_ERRORS_ID 0x8F
+
 /*
  * Messager code that publish cmds to bamocar
  */
 #define TORQUE_COMMAND_BAMO_BYTE 0x90
+
+/**
+ * Code used for
+ * Hydraulic line pressure in dashboard
+ */
+#define HYDRAULIC_LINE 0x90
+
+/**
+ * Code used for:
+ * APPS Higher
+ */
+#define APPS_HIGHER 0x20
+
+/**
+ * Code used for:
+ * APPS Lower
+ */
+#define APPS_LOWER 0x21
+
+/**
+ * Code used for:
+ * Driving State
+ */
+#define DRIVING_STATE 0x40
 
 // -------------- MESAGE IDs --------------
 
@@ -95,6 +133,16 @@
  * left wheel rpm
  */
 #define MASTER_ID 0x300
+
+
+/*
+ * ID used for:
+ * Signals from AS CU to the FSG Data Logger
+ */
+#define DV_DRIVING_DYNAMICS_1_ID 0x500
+#define DV_DRIVING_DYNAMICS_2_ID 0x501
+#define DV_SYSTEM_STATUS 0x502
+
 /*
  * ID used for:
  * Signals from master to the FSG Data Logger
@@ -125,12 +173,6 @@
  * Left wheel rpm
  */
 #define TEENSY_DASH 0x132
-
-/**
- * ID used for
- * Hydraulic line pressure
- */
-#define HYDRAULIC_LINE 0x90
 
 /**
  * ID used for:
@@ -174,8 +216,6 @@
  */
 #define BAMO_RESPONSE_ID 0x181
 
-#define BAMO_CURRENT_ID 0x20
-
 /**
  * ID used for AS_CU messages
  */
@@ -206,23 +246,16 @@
 
 /**
  * ID used for:
- * APPS Higher
+ * All temperatures from Cells
  */
-#define APPS_HIGHER 0x20
-
-/**
- * ID used for:
- * APPS Lower
- */
-#define APPS_LOWER 0x21
-
-/**
- * ID used for:
- * Driving State
- */
-#define DRIVING_STATE 0x40
+#define ALL_TEMPS_ID 0x280
 
 // -------------- SENSORS CONSTANTS --------------
+
+/**
+ * Number of NTC sensors in each stack
+ */
+#define NTC_SENSOR_COUNT 18
 
 /*
  * Quantization for the acceleration

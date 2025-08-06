@@ -41,7 +41,8 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
 
   cells_temps_pub_ =
       this->create_publisher<custom_interfaces::msg::CellsTemps>("vehicle/cells/temperature", 10);
-
+  _inverter_errors_pub_ =
+      this->create_publisher<custom_interfaces::msg::BamocarErrors>("/vehicle/inverter_errors", 10);
   _bamocar_current_pub =
       this->create_publisher<std_msgs::msg::Int32>("/vehicle/bamocar_current", 10);
 
@@ -121,12 +122,16 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
 
   this->lap_counter_subscription_ = this->create_subscription<std_msgs::msg::Float64>(
       "/state_estimation/lap_counter", 10, [this](const std_msgs::msg::Float64::SharedPtr msg) {
-        //this->lap_counter_ = static_cast<int>(msg->data);
+        this->lap_counter_ = static_cast<int>(msg->data);
       });
 
   this->path_subscription_ = this->create_subscription<custom_interfaces::msg::PathPointArray>(
       "/path_planning/path", 10, [this](const custom_interfaces::msg::PathPointArray::SharedPtr msg) {
-          //this->speed_target_ = static_cast<uint8_t>(msg->pathpoint_array[0].v) * 3.6; // convert to km/h
+        if (msg->pathpoint_array.size() > 0) {
+          this->speed_target_ = static_cast<uint8_t>(msg->pathpoint_array[0].v) * 3.6; // convert to km/h
+        } else {
+          this->speed_target_ = 0; // No path points, set speed target to
+        }
       });
 
   this->movella_imu_subscription_ = this->create_subscription<geometry_msgs::msg::Vector3Stamped>(
@@ -155,6 +160,9 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
 
   dv_timer_ = this->create_wall_timer(std::chrono::milliseconds(15),
                                    std::bind(&RosCan::dv_messages_callback, this));
+
+  _cell_temps_timer_ = this->create_wall_timer(
+      std::chrono::milliseconds(1000), std::bind(&RosCan::publish_cell_temperatures, this));
   
   can_statistics_timer_ = this->create_wall_timer(
       std::chrono::milliseconds(1000), std::bind(&RosCan::can_statistics_callback, this));
@@ -196,15 +204,6 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
   sleep(1);
 }
 
-void RosCan::can_interpreter_cells_temps(const unsigned char msg[8]) {
-  RCLCPP_INFO(this->get_logger(), "Starting temps");
-  custom_interfaces::msg::CellsTemps cells_temps_msg;
-  cells_temps_msg.min_temp = msg[1];
-  cells_temps_msg.max_temp = msg[2];
-  cells_temps_msg.avg_temp = msg[3];
-  cells_temps_pub_->publish(cells_temps_msg);
-  RCLCPP_INFO(this->get_logger(), "Ending temps");
-}
 // -------------- ROS TO CAN --------------
 
 void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr msg) {
@@ -314,12 +313,12 @@ void RosCan::emergency_callback(const std::shared_ptr<std_srvs::srv::Trigger::Re
   void *requestData = &data;
   unsigned int dlc = 1;  // Set the length of the data
   unsigned int flag = 0;
-  RCLCPP_INFO(this->get_logger(), "Emergency signal received, sending to CAN");
+  RCLCPP_WARN(this->get_logger(), "Emergency signal received, sending to CAN");
 
-  // stat_ = can_lib_wrapper_->canWrite(hnd0_, id, requestData, dlc, flag);
-  // if (stat_ != canOK) {
-  //   RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
-  // }
+  stat_ = can_lib_wrapper_->canWrite(hnd0_, id, requestData, dlc, flag);
+  if (stat_ != canOK) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
+  }
 }
 
 void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trigger::Request>,
@@ -457,6 +456,7 @@ void RosCan::can_statistics_callback() {
 
 bool RosCan::read_can_statistics(canHandle handle, custom_interfaces::msg::CanStatistics& msg) {
   canBusStatistics stats;
+  canRequestBusStatistics(handle);
   canStatus status = canGetBusStatistics(handle, &stats, sizeof(stats));
 
   if (status != canOK) {
@@ -516,12 +516,12 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int d
       break;
     }
     case DATA_LOGGER_SIGNALS_1: {
-      RCLCPP_INFO(this->get_logger(), "Received Data Logger Signals 1 message");
+      RCLCPP_DEBUG(this->get_logger(), "Received Data Logger Signals 1 message");
       data_log_info_1_publisher(msg);
       break;
     }
     case DATA_LOGGER_SIGNALS_2: {
-      RCLCPP_INFO(this->get_logger(), "Received Data Logger Signals 2 message");
+      RCLCPP_DEBUG(this->get_logger(), "Received Data Logger Signals 2 message");
       data_log_info_2_publisher(msg);
       break;
     }
@@ -552,11 +552,26 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int d
       break;
     }
     case BMS_THERMISTOR_ID: {
-      can_interpreter_cells_temps(msg);
+      bms_cells_temps_callback(msg);
       break;
     }
     case BMS_ERRORS_ID: {
       bms_errors_publisher(msg, dlc);
+      break;
+    }
+    case ALL_TEMPS_ID:
+    case ALL_TEMPS_ID + 1:
+    case ALL_TEMPS_ID + 2:
+    case ALL_TEMPS_ID + 3:
+    case ALL_TEMPS_ID + 4:
+    case ALL_TEMPS_ID + 5: {
+      if (dlc >= 2) {  // At least board_id + msg_index
+        uint8_t board_id_from_payload = msg[0];
+        uint8_t msg_index = msg[1];
+        if (board_id_from_payload == id) {
+          this->process_cell_temperatures(msg, board_id_from_payload, msg_index, dlc);
+        }
+      } 
       break;
     }
     default:
@@ -565,10 +580,10 @@ void RosCan::can_interpreter(long id, const unsigned char msg[8], unsigned int d
 }
 
 void RosCan::bamocar_current_publisher(const unsigned char msg[8]) {
-  std_msgs::msg::Int32 temp;
-  int16_t current = static_cast<int16_t>((msg[2] << 8) | msg[1]);
-  temp.data = current;
-  _bamocar_current_pub->publish(temp);
+  std_msgs::msg::Int32 current_msg;
+  int16_t current = static_cast<int16_t>((msg[4] << 24) | (msg[3] << 16) | (msg[2] << 8) | msg[1]);
+  current_msg.data = current;
+  _bamocar_current_pub->publish(current_msg);
 }
 
 void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
@@ -593,14 +608,18 @@ void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
       bamocar_current_publisher(msg);
       break;
     }
+    case BAMO_ERRORS_ID: {
+
+      break;
+    }
     default:
       break;
   }
 }
 
 void RosCan::can_interpreter_master(const unsigned char msg[8]) {
-  RCLCPP_INFO(this->get_logger(), "Received Master message");
-  RCLCPP_INFO(this->get_logger(), "Message: %x %x %x %x %x %x %x %x", msg[0], msg[1], msg[2],
+  RCLCPP_DEBUG(this->get_logger(), "Received Master message");
+  RCLCPP_DEBUG(this->get_logger(), "Message: %x %x %x %x %x %x %x %x", msg[0], msg[1], msg[2],
               msg[3], msg[4], msg[5], msg[6], msg[7]);
   switch (msg[0]) {
     case MASTER_AS_STATE_CODE: {
@@ -660,15 +679,6 @@ void RosCan::can_interpreter_master(const unsigned char msg[8]) {
     }
     case MASTER_EBS_REDUNDANCY_STATE_CODE: {
       this->asb_redundancy_state_ = static_cast<uint8_t>(msg[1]);
-      break;
-    }
-    case 
-    case TEENSY_RR_RPM_CODE: {
-      rr_rpm_publisher(msg);
-      break;
-    }
-    case TEENSY_RL_RPM_CODE: {
-      rl_rpm_publisher(msg);
       break;
     }
     default:
@@ -795,9 +805,9 @@ void RosCan::op_status_publisher() {
   message.header.stamp = this->get_clock()->now();
   message.go_signal = this->go_signal_;
   message.as_mission = this->as_mission_;
-  // RCLCPP_DEBUG(this->get_logger(),
-  //              "Received Operational Status Message: Go Signal: %d --- AS Mission: %d",
-  //              go_signal_, as_mission_);
+  RCLCPP_DEBUG(this->get_logger(),
+               "Received Operational Status Message: Go Signal: %d --- AS Mission: %d",
+               go_signal_, as_mission_);
   operational_status_->publish(message);
 }
 
@@ -845,6 +855,13 @@ void RosCan::imu_angular_velocity_publisher(const unsigned char msg[8]) {
   message.yaw = yaw;
 
   imu_angular_velocity_pub_->publish(message);
+}
+
+void RosCan::bms_cells_temps_callback(const unsigned char msg[8]) {
+  RCLCPP_DEBUG(this->get_logger(), "Registering BMS temps");
+  this->_cells_temps_min_ = msg[1];
+  this->_cells_temps_max_ = msg[2];
+  this->_cells_temps_avg_ = msg[3];
 }
 
 // Used only to initially set actuator origin
@@ -918,7 +935,7 @@ void RosCan::steering_angle_bosch_publisher(const unsigned char msg[8]) {
   double steering_degrees = this->steering_angle_ * 180.0 / M_PI;
   steering_angle_actual_ = static_cast<int8_t>(steering_degrees * 2);
 
-  RCLCPP_INFO(this->get_logger(), "Steering angle: %f", this->steering_angle_);
+  RCLCPP_DEBUG(this->get_logger(), "Steering angle: %f", this->steering_angle_);
 
   double steering_angle_wheels;
   transform_steering_angle_reading(this->steering_angle_, steering_angle_wheels);
@@ -984,7 +1001,7 @@ void RosCan::motor_speed_publisher(const unsigned char msg[8]) {
   message.header.stamp = this->get_clock()->now();
   message.rl_rpm = this->motor_speed_ * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE;
   message.rr_rpm = this->motor_speed_ * BAMOCAR_MAX_RPM / BAMOCAR_MAX_SCALE;
-  RCLCPP_INFO(this->get_logger(), "Received motor speed from Bamocar: %d", this->motor_speed_);
+  RCLCPP_DEBUG(this->get_logger(), "Received motor speed from Bamocar: %d", this->motor_speed_);
   motor_rpm_pub_->publish(message);
 }
 void RosCan::motor_temp_publisher(const unsigned char msg[8]) {
@@ -1124,7 +1141,7 @@ void RosCan::dv_messages_callback() {
 }
 
 void RosCan::send_dv_driving_dynamics_1() {
-    long id = 0x500;
+    long id = DV_DRIVING_DYNAMICS_1_ID;
     unsigned char buffer[8] = {0};
     
     // Speed_actual (bit 0-7, unsigned)
@@ -1162,7 +1179,7 @@ void RosCan::send_dv_driving_dynamics_1() {
 }
 
 void RosCan::send_dv_driving_dynamics_2() {
-    long id = 0x501;
+    long id = DV_DRIVING_DYNAMICS_2_ID;
     unsigned char buffer[8] = {0};
     
     // Acceleration longitudinal (bit 0-15, signed, scale 1/512)
@@ -1191,7 +1208,7 @@ void RosCan::send_dv_driving_dynamics_2() {
 }
 
 void RosCan::send_dv_system_status() {
-    long id = 0x502;
+    long id = DV_SYSTEM_STATUS;
     unsigned char buffer[8] = {0};
     
     // AS_status (bit 0-2)
@@ -1234,6 +1251,83 @@ void RosCan::send_dv_system_status() {
     if (stat_ != canOK) {
         RCLCPP_ERROR(this->get_logger(), "Failed to write DV system status to CAN bus");
     }
+}
+
+void RosCan::process_cell_temperatures(const unsigned char msg[8], uint8_t stack_id, uint8_t msg_index, unsigned int dlc) {
+
+  // Process temperature data starting from buf[2]
+  uint8_t temp_count = dlc - 2;  
+  uint8_t start_sensor_index = msg_index * 6;
+
+  for (uint8_t i = 0; i < temp_count; i++) {
+    uint8_t sensor_index = start_sensor_index + i;
+    if (sensor_index < NTC_SENSOR_COUNT) {  
+      _cells_temps_[stack_id * NTC_SENSOR_COUNT + sensor_index] =
+          static_cast<int8_t>(msg[2 + i]); 
+    }
+  }
+}
+
+void RosCan::publish_cell_temperatures() {
+  custom_interfaces::msg::CellsTemps cell_temps_msg;
+  cell_temps_msg.header.stamp = this->get_clock()->now();
+  
+  for (uint8_t i = 0; i < NTC_SENSOR_COUNT * 6; i++) {
+    cell_temps_msg.all_cells[i] = _cells_temps_[i];
+  }
+
+  cell_temps_msg.min_temp = this->_cells_temps_min_;
+  cell_temps_msg.max_temp = this->_cells_temps_max_;
+  cell_temps_msg.avg_temp = this->_cells_temps_avg_;
+  
+  cells_temps_pub_->publish(cell_temps_msg);
+  RCLCPP_DEBUG(this->get_logger(), "Published cell temperatures: Min: %d, Max: %d, Avg: %d",
+               this->_cells_temps_min_, this->_cells_temps_max_, this->_cells_temps_avg_);
+}
+
+void RosCan::publish_bamocar_errors(const unsigned char msg[8]) {
+  custom_interfaces::msg::BamocarErrors bamocar_errors_msg;
+  bamocar_errors_msg.header.stamp = this->get_clock()->now();
+  int32_t message_value = (msg[4] << 24) | (msg[3] << 16) | (msg[2] << 8) | msg[1];
+  const uint16_t error_bitmap = static_cast<uint16_t>(message_value & 0xFFFF);
+  const uint16_t warning_bitmap = static_cast<uint16_t>((message_value >> 16) & 0xFFFF);
+
+  bamocar_errors_msg.bad_params = (warning_bitmap & 1);
+  bamocar_errors_msg.hardware_error = (warning_bitmap >> 1 & 1);
+  bamocar_errors_msg.rfe_not_present = (warning_bitmap >> 2 & 1);
+  bamocar_errors_msg.bus_timeout= (warning_bitmap >> 3 & 1);
+  bamocar_errors_msg.bad_missing_feedback = (warning_bitmap >> 4 & 1);
+  bamocar_errors_msg.voltage_low = (warning_bitmap >> 5 & 1);
+  bamocar_errors_msg.motor_temp = (warning_bitmap >> 6 & 1);
+  bamocar_errors_msg.igbt_temp = (warning_bitmap >> 7 & 1);
+  bamocar_errors_msg.voltage_high = (warning_bitmap >> 8 & 1);
+  bamocar_errors_msg.i_peak = (warning_bitmap >> 9 & 1);
+  bamocar_errors_msg.race_away = (warning_bitmap >> 10 & 1);
+  bamocar_errors_msg.ecode_error = (warning_bitmap >> 11 & 1);
+  bamocar_errors_msg.watchdog_reset= (warning_bitmap >> 12 & 1);
+  bamocar_errors_msg.i_offset = (warning_bitmap >> 13 & 1);
+  bamocar_errors_msg.internal_voltage = (warning_bitmap >> 14 & 1);
+  bamocar_errors_msg.bleed_resistor_overload = (warning_bitmap >> 15 & 1);
+
+  bamocar_errors_msg.bad_params = (error_bitmap & 1) * 2;
+  bamocar_errors_msg.hardware_error = (error_bitmap >> 1 & 1) * 2;
+  bamocar_errors_msg.rfe_not_present = (error_bitmap >> 2 & 1) * 2;
+  bamocar_errors_msg.bus_timeout= (error_bitmap >> 3 & 1) * 2;
+  bamocar_errors_msg.bad_missing_feedback = (error_bitmap >> 4 & 1) * 2;
+  bamocar_errors_msg.voltage_low = (error_bitmap >> 5 & 1) * 2;
+  bamocar_errors_msg.motor_temp = (error_bitmap >> 6 & 1) * 2;
+  bamocar_errors_msg.igbt_temp = (error_bitmap >> 7 & 1) * 2;
+  bamocar_errors_msg.voltage_high = (error_bitmap >> 8 & 1) * 2;
+  bamocar_errors_msg.i_peak = (error_bitmap >> 9 & 1) * 2;
+  bamocar_errors_msg.race_away = (error_bitmap >> 10 & 1) * 2;
+  bamocar_errors_msg.ecode_error = (error_bitmap >> 11 & 1) * 2;
+  bamocar_errors_msg.watchdog_reset= (error_bitmap >> 12 & 1) * 2;
+  bamocar_errors_msg.i_offset = (error_bitmap >> 13 & 1) * 2;
+  bamocar_errors_msg.internal_voltage = (error_bitmap >> 14 & 1) * 2;
+  bamocar_errors_msg.bleed_resistor_overload = (error_bitmap >> 15 & 1) * 2;
+  RCLCPP_DEBUG(this->get_logger(), "Publishing Bamocar Errors");
+
+  _inverter_errors_pub_->publish(bamocar_errors_msg);
 }
 
 
