@@ -317,7 +317,7 @@ void RosCan::emergency_callback(const std::shared_ptr<std_srvs::srv::Trigger::Re
 
   stat_ = can_lib_wrapper_->canWrite(hnd0_, id, requestData, dlc, flag);
   if (stat_ != canOK) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
+    RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus: %d", stat_);
   }
 }
 
@@ -338,7 +338,7 @@ void RosCan::mission_finished_callback(const std::shared_ptr<std_srvs::srv::Trig
 
   stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
   if (stat_ != canOK) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus");
+    RCLCPP_ERROR(this->get_logger(), "Failed to write emergency message to CAN bus: %d", stat_);
   }
 }
 
@@ -368,7 +368,7 @@ void RosCan::alive_msg_callback() {
 
   stat_ = can_lib_wrapper_->canWrite(hnd1_, id, msg, dlc, flag);
   if (stat_ != canOK) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to write alive message to CAN bus");
+    RCLCPP_ERROR(this->get_logger(), "Failed to write alive message to CAN bus: %d", stat_);
   }
 }
 
@@ -385,7 +385,7 @@ void RosCan::cubem_set_origin() {
   stat_ = can_lib_wrapper_->canWrite(hnd1_, id, steering_requestData, steering_dlc, flag);
   RCLCPP_INFO(this->get_logger(), "ORIGIN SET :)");
   if (stat_ != canOK) {
-    RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering controller");
+    RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering controller: %d", stat_);
   }
 }
 
@@ -401,6 +401,7 @@ int RosCan::bosch_steering_angle_set_origin() {
   // Reset previous origin
   stat_ = canWrite(hnd0_, id, request_data, dlc, flag);
   if (stat_ != canOK) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering angle sensor: %d", stat_);
     return 1;
   }
   sleep(1);  // Necessary for configuration to sink in
@@ -411,6 +412,7 @@ int RosCan::bosch_steering_angle_set_origin() {
   // Set new origin
   stat_ = canWrite(hnd0_, id, request_data, dlc, flag);
   if (stat_ != canOK) {
+    RCLCPP_ERROR(this->get_logger(), "Failed to set origin of steering angle sensor: %d", stat_);
     return 1;
   }
   return 0;
@@ -1174,7 +1176,7 @@ void RosCan::send_dv_driving_dynamics_1() {
     
     stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
     if (stat_ != canOK) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to write DV driving dynamics 1 to CAN bus");
+        RCLCPP_ERROR(this->get_logger(), "Failed to write DV driving dynamics 1 to CAN bus: %d", stat_);
     }
 }
 
@@ -1203,7 +1205,7 @@ void RosCan::send_dv_driving_dynamics_2() {
     
     stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
     if (stat_ != canOK) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to write DV driving dynamics 2 to CAN bus");
+        RCLCPP_ERROR(this->get_logger(), "Failed to write DV driving dynamics 2 to CAN bus: %d", stat_);
     }
 }
 
@@ -1249,7 +1251,7 @@ void RosCan::send_dv_system_status() {
     
     stat_ = can_lib_wrapper_->canWrite(hnd1_, id, requestData, dlc, flag);
     if (stat_ != canOK) {
-        RCLCPP_ERROR(this->get_logger(), "Failed to write DV system status to CAN bus");
+        RCLCPP_ERROR(this->get_logger(), "Failed to write DV system status to CAN bus: %d", stat_);
     }
 }
 
