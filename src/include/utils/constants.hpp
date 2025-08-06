@@ -95,7 +95,31 @@
  * left wheel rpm
  */
 #define MASTER_ID 0x300
-
+/*
+ * ID used for:
+ * Signals from master to the FSG Data Logger
+ */
+#define DATA_LOGGER_SIGNALS_1 0x511
+/*
+ * ID used for:
+ * Signals from master to the FSG Data Logger
+ */
+#define DATA_LOGGER_SIGNALS_2 0x512
+/*
+ * ID used for:
+ * Signals from master to the FSG Data Logger
+ */
+#define DATA_LOGGER_SIGNALS_3 0x513
+/*
+ * ID used for:
+ * Signals from master to the FSG Data Logger
+ */
+#define DATA_LOGGER_SIGNALS_4 0x514
+/*
+ * ID used for:
+ * Signals from master to the FSG Data Logger
+ */
+#define DATA_LOGGER_SIGNALS_5 0x515
 /*
  * ID used for:
  * Left wheel rpm

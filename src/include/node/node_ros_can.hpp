@@ -10,24 +10,24 @@
 
 #include "canlib_wrappers/ican_lib_wrapper.hpp"
 #include "custom_interfaces/msg/bms_errors.hpp"
+#include "custom_interfaces/msg/can_statistics.hpp"
 #include "custom_interfaces/msg/cells_temps.hpp"
-#include "custom_interfaces/msg/control_command.hpp"
 #include "custom_interfaces/msg/cone_array.hpp"
-#include "custom_interfaces/msg/velocities.hpp"
-#include "custom_interfaces/msg/hydraulic_line_pressure.hpp"
+#include "custom_interfaces/msg/control_command.hpp"
+#include "custom_interfaces/msg/data_log_info1.hpp"
+#include "custom_interfaces/msg/data_log_info2.hpp"
 #include "custom_interfaces/msg/evaluator_control_data.hpp"
-#include "custom_interfaces/msg/path_point_array.hpp"
+#include "custom_interfaces/msg/hydraulic_line_pressure.hpp"
 #include "custom_interfaces/msg/imu.hpp"
 #include "custom_interfaces/msg/imu_acceleration.hpp"
 #include "custom_interfaces/msg/imu_data.hpp"
-#include "custom_interfaces/msg/master_log.hpp"
-#include "custom_interfaces/msg/master_log2.hpp"
 #include "custom_interfaces/msg/operational_status.hpp"
+#include "custom_interfaces/msg/path_point_array.hpp"
 #include "custom_interfaces/msg/steering_angle.hpp"
 #include "custom_interfaces/msg/temperature.hpp"
+#include "custom_interfaces/msg/velocities.hpp"
 #include "custom_interfaces/msg/wheel_rpm.hpp"
 #include "custom_interfaces/msg/yaw_pitch_roll.hpp"
-#include "custom_interfaces/msg/cells_temps.hpp"
 #include "geometry_msgs/msg/vector3_stamped.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/bool.hpp"
@@ -50,7 +50,6 @@ private:
    * @brief Represents the various operational states of the vehicle.
    */
   enum class State { AS_MANUAL, AS_OFF, AS_READY, AS_DRIVING, AS_FINISHED, AS_EMERGENCY };
-
   rclcpp::Publisher<custom_interfaces::msg::OperationalStatus>::SharedPtr
       operational_status_;  ///< Publisher for operational status
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
@@ -64,9 +63,10 @@ private:
       fr_rpm_pub_;  ///< Publisher for front right wheel RPM
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
       motor_rpm_pub_;  ///< Publisher for motor RPM
-  rclcpp::Publisher<custom_interfaces::msg::MasterLog>::SharedPtr
-      master_log_pub_;  ///< Publisher for master log
-  rclcpp::Publisher<custom_interfaces::msg::MasterLog2>::SharedPtr master_log_pub_2_;
+  rclcpp::Publisher<custom_interfaces::msg::DataLogInfo1>::SharedPtr
+      data_log_info_1_pub_;  ///< Publisher for data log info 1
+  rclcpp::Publisher<custom_interfaces::msg::DataLogInfo2>::SharedPtr
+      data_log_info_2_pub_;  ///< Publisher for data log info 2
   rclcpp::Publisher<custom_interfaces::msg::Temperature>::SharedPtr
       motor_temp_pub_;  ///< Publisher for motor temp
   rclcpp::Publisher<custom_interfaces::msg::Temperature>::SharedPtr
@@ -85,6 +85,10 @@ private:
       implausability_pub_;  ///< Publisher for implausibility status
   rclcpp::Publisher<std_msgs::msg::Int8>::SharedPtr
       driving_state_pub_;  ///< Publisher for driving state
+  rclcpp::Publisher<custom_interfaces::msg::CanStatistics>::SharedPtr
+      can_line_0_stats_pub_;  ///< Publisher for statistics of the first CAN line
+  rclcpp::Publisher<custom_interfaces::msg::CanStatistics>::SharedPtr
+      can_line_1_stats_pub_;  ///< Publisher for statistics of the second CAN line
 
   rclcpp::Publisher<custom_interfaces::msg::SteeringAngle>::SharedPtr
       steering_motor_state_pub_;  ///< Publisher for CubeM Motor Steering angle
@@ -111,7 +115,7 @@ private:
 
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
       manual_throttle_pub_;  ///< Publisher for manual throttle value
-  
+
   rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr
       manual_brake_pub_;  ///< Publisher for manual throttle value
 
@@ -163,6 +167,7 @@ private:
   rclcpp::TimerBase::SharedPtr timer_;            ///< Timer for periodic tasks
   rclcpp::TimerBase::SharedPtr timer_alive_msg_;  ///< Timer for sending alive messages
   rclcpp::TimerBase::SharedPtr dv_timer_;         ///< Timer for sending driving dynamics messages
+  rclcpp::TimerBase::SharedPtr can_statistics_timer_;  ///< Timer for CAN statistics
 
   canHandle hnd0_;  ///< Handle to the CAN channel
   canHandle hnd1_;  ///< Handle to the CAN channel
@@ -190,7 +195,7 @@ private:
 
   double cubem_steering_angle_ = 0.0;  ///< Steering angle from Cubemars
 
-  //DV driving dynamics 1
+  // DV driving dynamics 1
   uint8_t speed_actual_ = 0;
   uint8_t speed_target_ = 0;
   int8_t steering_angle_actual_ = 0;
@@ -200,23 +205,20 @@ private:
   int8_t motor_moment_actual_ = 0;
   int8_t motor_moment_target_ = 0;
 
-  //DV driving dynamics 2
+  // DV driving dynamics 2
   int16_t acceleration_longitudinal_ = 0;
   int16_t acceleration_lateral_ = 0;
   int16_t yaw_rate_ = 0;
 
-  //DV system status
-  uint8_t as_status_ = 1; 
+  // DV system status
+  uint8_t as_status_ = 1;
   uint8_t asb_ebs_state_ = 1;
-  uint8_t ami_state_ = 1; 
+  uint8_t ami_state_ = 1;
   bool steering_state_ = false;
-  uint8_t asb_redundancy_state_ = 1; 
+  uint8_t asb_redundancy_state_ = 1;
   uint8_t lap_counter_ = 0;
   uint8_t cones_count_actual_ = 0;
   uint16_t cones_count_all_ = 0;
-
-
-    
 
   /**
    * @brief Function to turn ON and OFF the CAN BUS
@@ -245,6 +247,21 @@ private:
   void can_interpreter_cells_temps(const unsigned char msg[8]);
 
   void bamocar_current_publisher(const unsigned char msg[8]);
+
+  /**
+   * @brief Reads the statistics of the CAN lines and publishes them to ROS.
+   * 
+   */
+  void can_statistics_callback();
+
+    /**
+     * @brief Reads the CAN statistics for a specific channel and populates the message.
+     * @param handle CAN handle of the channel
+     * @param msg Message to populate with statistics
+     * @return true if statistics were read successfully, false otherwise
+     */
+  bool read_can_statistics(canHandle handle, custom_interfaces::msg::CanStatistics& msg);
+
 
   /**
    * @brief Publishes the current operational status to ROS.
@@ -356,21 +373,11 @@ private:
    */
   void dash_interpreter(const unsigned char msg[8]);
 
-  /**
-   * @brief Publishes master log data.
-   *
-   * @param msg CAN message data
-   */
-  void master_logs_publisher(const unsigned char msg[8]);
 
+  void data_log_info_1_publisher(const unsigned char msg[8]);
+  void data_log_info_2_publisher(const unsigned char msg[8]);
   void manual_throttle_publisher(const unsigned char msg[8]);
 
-  /**
-   * @brief Publishes master log second message data.
-   *
-   * @param msg CAN message data
-   */
-  void master_logs_2_publisher(const unsigned char msg[8]);
 
   /**
    * @brief Handles the emergency service callback.
