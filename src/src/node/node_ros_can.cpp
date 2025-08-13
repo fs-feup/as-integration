@@ -591,27 +591,40 @@ void RosCan::bamocar_current_publisher(const unsigned char msg[8]) {
 void RosCan::can_interpreter_bamocar(const unsigned char msg[8]) {
   switch (msg[0]) {
     case BAMOCAR_BATTERY_VOLTAGE_CODE: {
-      inverter_voltage_publisher(msg);
+      if (is_debug_){
+        inverter_voltage_publisher(msg);
+      }
       break;
     }
     case BAMOCAR_MOTOR_SPEED_CODE: {
-      motor_speed_publisher(msg);
+      if (is_debug_) {
+        motor_speed_publisher(msg);
+      }
       break;
     }
     case BAMOCAR_MOTOR_TEMP_CODE: {
-      motor_temp_publisher(msg);
+      if (is_debug_) {
+        motor_temp_publisher(msg);
+      }
       break;
     }
     case BAMOCAR_INVERTER_TEMP_CODE: {
-      inverter_temp_publisher(msg);
+      if (is_debug_) {
+        inverter_temp_publisher(msg);
+      }
       break;
     }
     case BAMO_CURRENT_ID: {
-      bamocar_current_publisher(msg);
+      if (is_debug_) {
+        bamocar_current_publisher(msg);
+      }
       break;
     }
     case BAMO_ERRORS_ID: {
-      publish_bamocar_errors(msg);
+      if (is_debug_)
+      {
+       publish_bamocar_errors(msg);
+      }
       break;
     }
     default:
@@ -691,7 +704,9 @@ void RosCan::can_interpreter_master(const unsigned char msg[8]) {
 void RosCan::dash_interpreter(const unsigned char msg[8]) {
   switch (msg[0]) {
     case HYDRAULIC_LINE: {
-      hydraulic_line_callback(msg);
+      if (is_debug_){
+        hydraulic_line_callback(msg);
+      }
       break;
     }
     case FR_RPM_CODE: {
@@ -703,11 +718,15 @@ void RosCan::dash_interpreter(const unsigned char msg[8]) {
       break;
     }
     case APPS_HIGHER: {
-      apps_higher_publisher(msg);
+      if (is_debug_) {
+        apps_higher_publisher(msg);
+      }
       break;
     }
     case APPS_LOWER: {
-      apps_lower_publisher(msg);
+      if (is_debug_) {
+        apps_lower_publisher(msg);
+      }
       break;
     }
     case DRIVING_STATE: {

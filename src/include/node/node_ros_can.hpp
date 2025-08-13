@@ -52,6 +52,8 @@ private:
    */
   enum class State { AS_MANUAL, AS_OFF, AS_READY, AS_DRIVING, AS_FINISHED, AS_EMERGENCY };
 
+  bool is_debug_ = false;  ///< Flag to enable debug mode
+
   rclcpp::Publisher<custom_interfaces::msg::OperationalStatus>::SharedPtr
       operational_status_;  ///< Publisher for operational status
   rclcpp::Publisher<custom_interfaces::msg::WheelRPM>::SharedPtr
