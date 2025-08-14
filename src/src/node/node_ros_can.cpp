@@ -784,15 +784,15 @@ void RosCan::data_log_info_1_publisher(const unsigned char msg[8]) {
 
 
 void RosCan::data_log_info_2_publisher(const unsigned char msg[8]) {
-  uint32_t hydraulic_line_front_pressure = (static_cast<uint32_t>(msg[0]) << 24) |
-                                           (static_cast<uint32_t>(msg[1]) << 16) |
-                                           (static_cast<uint32_t>(msg[2]) << 8) |
-                                           static_cast<uint32_t>(msg[3]);
+  uint32_t hydraulic_line_front_pressure = (static_cast<uint32_t>(msg[0]) |
+                                           (static_cast<uint32_t>(msg[1]) << 8) |
+                                           (static_cast<uint32_t>(msg[2]) << 16) |
+                                           static_cast<uint32_t>(msg[3] << 24));
   
-  uint32_t hydraulic_line_pressure = (static_cast<uint32_t>(msg[4]) << 24) |
-                                     (static_cast<uint32_t>(msg[5]) << 16) |
-                                     (static_cast<uint32_t>(msg[6]) << 8) |
-                                     static_cast<uint32_t>(msg[7]);
+  uint32_t hydraulic_line_pressure = (static_cast<uint32_t>(msg[4])) |
+                                     (static_cast<uint32_t>(msg[5]) << 8) |
+                                     (static_cast<uint32_t>(msg[6]) << 16) |
+                                     static_cast<uint32_t>(msg[7] << 24);
 
   custom_interfaces::msg::DataLogInfo2 data_log_info_2;
   data_log_info_2.header.stamp = this->get_clock()->now();
