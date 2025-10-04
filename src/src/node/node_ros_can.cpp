@@ -211,8 +211,10 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
     return;
   }
 
+  double throttle = (msg->throttle_rl + msg->throttle_rr) / 2.0;
+
   // Check if the throttle value is within the limits
-  if (msg->throttle < THROTTLE_LOWER_LIMIT || msg->throttle > THROTTLE_UPPER_LIMIT) {
+  if (throttle < THROTTLE_LOWER_LIMIT || throttle > THROTTLE_UPPER_LIMIT) {
     RCLCPP_WARN(this->get_logger(), "Throttle value out of range");
     return;
   }
@@ -227,16 +229,16 @@ void RosCan::control_callback(custom_interfaces::msg::ControlCommand::SharedPtr 
   double steering_degrees = msg->steering * 180.0 / M_PI;
   this->steering_angle_target_ = static_cast<int8_t>(steering_degrees * 2);
 
-  this->motor_moment_actual_ = static_cast<int8_t>(msg->throttle * 100);
-  this->motor_moment_target_ = static_cast<int8_t>(msg->throttle * 100);
+  this->motor_moment_actual_ = static_cast<int8_t>(throttle * 100);
+  this->motor_moment_target_ = static_cast<int8_t>(throttle * 100);
 
 
   if (this->go_signal_) {
     RCLCPP_INFO(this->get_logger(), "State is Driving: Steering: %f (radians), Throttle: %f",
-                msg->steering, msg->throttle);
+                msg->steering, throttle);
 
     send_steering_control(steering_angle_command);
-    send_throttle_control(msg->throttle);
+    send_throttle_control(throttle);
   } else {
     RCLCPP_DEBUG(this->get_logger(), "No go signal!");
   }
