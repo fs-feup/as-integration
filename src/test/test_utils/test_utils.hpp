@@ -43,7 +43,7 @@ protected:
 
     control_command_ =
         std::make_shared<custom_interfaces::msg::ControlCommand>();
-    control_command_->throttle = 0;
+    control_command_->throttle_rl = control_command_->throttle_rr = 0.0;
     control_command_->steering = 0.1;
     ros_can_->go_signal_ = true;
   }
@@ -67,7 +67,7 @@ protected:
    */
   void prepare_control_publish_values(float throttle, float steering,
                                    int expectedCalls) {
-    control_command_->throttle = throttle;
+    control_command_->throttle_rl = control_command_->throttle_rr = throttle;
     control_command_->steering = steering;
     long steering_id = STEERING_COMMAND_CUBEM_ID;
     EXPECT_CALL(
@@ -120,7 +120,7 @@ protected:
   std::map<std::string, std::string> topics_ = {
       {"emergency", "/as_msgs/emergency"},
       {"mission_finished", "/as_msgs/mission_finished"},
-      {"controls", "/as_msgs/controls"},
+      {"controls", "/control/command"},
       {"status", "operational_status_"},
       {"right_rear", "rrRPM"}};
 

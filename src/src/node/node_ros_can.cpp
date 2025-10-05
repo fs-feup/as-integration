@@ -97,7 +97,7 @@ RosCan::RosCan(std::shared_ptr<ICanLibWrapper> can_lib_wrapper_param)
 
   // Subscritpions
   control_listener_ = this->create_subscription<custom_interfaces::msg::ControlCommand>(
-      "/as_msgs/controls", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
+      "/control/command", 10, std::bind(&RosCan::control_callback, this, std::placeholders::_1));
 
   this->perception_subscription_ = this->create_subscription<custom_interfaces::msg::ConeArray>(
       "/perception/cones", 10, [this](const custom_interfaces::msg::ConeArray::SharedPtr msg) {
