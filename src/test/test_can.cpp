@@ -88,7 +88,7 @@ TEST_F(RosCanTest, TestOutOfRangeSingleSteeringThrottle) {
  * received values.
  */
 TEST_F(RosCanTest, PublishControlCommand) {
-  control_command_->throttle = 0.5;
+  control_command_->throttle_rl = control_command_->throttle_rr = 0.5;
   control_command_->steering = 0.1;
   control_command_publisher_ =
       test_node_->create_publisher<custom_interfaces::msg::ControlCommand>(topics_["controls"], 10);
@@ -107,7 +107,7 @@ TEST_F(RosCanTest, PublishControlCommand) {
   long throttle_id = BAMO_COMMAND_ID;
   EXPECT_CALL(
       *mock_can_lib_wrapper_,
-      canWrite(testing::_, throttle_id, PointeeAsThrottleValueEqualTo(control_command_->throttle),
+      canWrite(testing::_, throttle_id, PointeeAsThrottleValueEqualTo(control_command_->throttle_rl),
                testing::_, testing::_))
       .Times(1)
       .WillOnce(testing::Return(canOK));

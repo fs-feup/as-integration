@@ -17,7 +17,6 @@
 #include "custom_interfaces/msg/control_command.hpp"
 #include "custom_interfaces/msg/data_log_info1.hpp"
 #include "custom_interfaces/msg/data_log_info2.hpp"
-#include "custom_interfaces/msg/evaluator_control_data.hpp"
 #include "custom_interfaces/msg/hydraulic_line_pressure.hpp"
 #include "custom_interfaces/msg/imu.hpp"
 #include "custom_interfaces/msg/imu_acceleration.hpp"
@@ -139,8 +138,6 @@ private:
   map_subscription_;  ///< Subscription for map data  
   rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr
   lap_counter_subscription_;  ///< Subscription for lap counter data  
-  rclcpp::Subscription<custom_interfaces::msg::EvaluatorControlData>::SharedPtr
-  evaluator_subscription_;  ///< Subscription for evaluator data  
   rclcpp::Subscription<custom_interfaces::msg::PathPointArray>::SharedPtr
   path_subscription_;  ///< Subscription for path data  
   rclcpp::Subscription<geometry_msgs::msg::Vector3Stamped>::SharedPtr
